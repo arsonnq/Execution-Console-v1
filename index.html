@@ -1,0 +1,2270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0a0a0a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Execution Flow">
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="apple-touch-icon" href="./apple-touch-icon.png">
+<title>Execution Flow</title>
+<style>
+  :root{
+    --panel:#161616;
+    --panel-2:#0a0a0a;
+    --paper:#F3EEDF;
+    --paper-line:#DCD3BC;
+    --ink:#20241F;
+    --ink-soft:#5B5E56;
+    --amber:#EAAE4F;
+    --amber-dim:#8A6A34;
+    --green:#5AB584;
+    --green-dim:#2E4A38;
+    --red:#D0705A;
+    --red-dim:#6E3428;
+    --steel:#9AA5AC;
+    --hair:rgba(237,231,218,0.14);
+  }
+  *{box-sizing:border-box;}
+  html,body{
+    margin:0;padding:0;color:var(--paper);
+    background: radial-gradient(ellipse at top, #1a1a1a 0%, #0a0a0a 55%, #050505 100%);
+    background-attachment: fixed;
+    min-height:100vh;
+  }
+  body{
+    font-family: 'Iowan Old Style','Palatino Linotype',Georgia,serif;
+    -webkit-font-smoothing:antialiased;
+    padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+    overscroll-behavior-y:contain;
+  }
+  .sans{ font-family: 'Avenir Next','Segoe UI',Helvetica,Arial,sans-serif; }
+  .num{ font-family:'Courier New',ui-monospace,monospace; font-variant-numeric: tabular-nums; }
+
+  .frame{max-width:920px;margin:0 auto;padding:28px 20px 80px;}
+
+  input, select, textarea, button{ -webkit-tap-highlight-color:transparent; }
+  input, select, textarea{ font-size:16px; }
+  button, .mindset-opt, .rchoice .opt, .radiogroup label, .pf-toggle .opt{ min-height:44px; touch-action:manipulation; }
+
+  .reg-overlay{
+    display:none; position:fixed; inset:0; background:rgba(5,5,5,0.92);
+    z-index:1000; align-items:center; justify-content:center; padding:20px;
+  }
+  .reg-overlay.active{ display:flex; }
+  .reg-card{
+    background:var(--panel); border:1px solid var(--hair); border-radius:4px;
+    padding:28px 26px; max-width:420px; width:100%;
+  }
+  .reg-title{ font-size:22px; font-weight:600; color:var(--paper); margin:0 0 10px; }
+  .reg-sub{
+    font-family:'Avenir Next',sans-serif; font-size:13px; color:var(--steel);
+    line-height:1.5; margin:0 0 18px;
+  }
+  .reg-error{
+    font-family:'Avenir Next',sans-serif; font-size:12.5px; color:var(--red);
+    margin-top:10px;
+  }
+  .reg-watermark{
+    font-family:'Iowan Old Style','Palatino Linotype',Georgia,serif; font-size:18px; font-weight:600; line-height:1.2; color:var(--paper);
+    letter-spacing:0.1px; text-align:right; margin-top:2px;
+  }
+
+  .masthead{
+    display:flex; justify-content:space-between; align-items:flex-end;
+    border-bottom:1px solid var(--hair);
+    padding-bottom:14px; margin-bottom:22px;
+  }
+  .masthead h1{
+    font-size:28px; font-weight:600; letter-spacing:0.2px; margin:0;
+    color:var(--paper);
+  }
+  .masthead .sub{ font-family:'Avenir Next',sans-serif; font-size:14px; font-weight:500; letter-spacing:0.45px; color:var(--steel); margin-top:5px; line-height:1.35; }
+  .clock{ font-family:'Courier New',monospace; font-size:14px; line-height:1.35; color:var(--steel); text-align:right; }
+
+  .holiday-bar{
+    display:none;
+    background: linear-gradient(180deg, var(--amber) 0%, var(--amber-dim) 100%);
+    color:#2A1E08; border-radius:3px; padding:12px 16px; margin-bottom:20px;
+    font-family:'Avenir Next',sans-serif; font-size:14px; font-weight:600;
+    align-items:center; gap:10px;
+  }
+  .holiday-bar.active{ display:flex; }
+
+  .grid{ display:grid; grid-template-columns: 1.05fr 0.95fr; gap:18px; align-items:stretch; }
+
+  .panel-reasoning{ display:flex; flex-direction:column; }
+  .panel-reasoning .reasons{ display:flex; flex-direction:column; flex:1; margin-top:20px; }
+  .panel-reasoning .reasons h2{ flex:0 0 auto; }
+  .panel-reasoning .reasons .field{
+    display:flex; flex-direction:column; flex:1; margin-bottom:14px;
+  }
+  .panel-reasoning .reasons .field:last-child{ margin-bottom:0; }
+  .panel-reasoning .reasons .field textarea{
+    flex:1; min-height:64px; line-height:1.5; resize:none;
+  }
+  @media (max-width:760px){
+    .grid{ grid-template-columns:1fr; }
+    .frame{ padding:20px 14px calc(64px + env(safe-area-inset-bottom)); }
+    .masthead{ align-items:flex-start; gap:12px; }
+    .masthead > div:first-child{ min-width:0; flex:1 1 auto; }
+    .masthead > div:last-child{ flex:0 0 155px; min-width:155px; }
+    .masthead h1{ font-size:25px; }
+    .masthead .sub{ font-size:14.5px; line-height:1.4; letter-spacing:0.35px; }
+    .clock{ font-size:16px; line-height:1.35; white-space:nowrap; font-weight:600; }
+    .reg-watermark{ font-size:18px; font-weight:600; line-height:1.2; white-space:nowrap; margin-top:2px; }
+    .panel{ padding:17px 15px 19px; }
+    .mindset-opt{ min-width:0; flex-basis:100%; }
+    .row2, .dedit-grid{ grid-template-columns:1fr; }
+    .outcome-row{ flex-direction:column; }
+    .log-entry{ grid-template-columns:92px minmax(0,1fr) 55px 30px; gap:7px; }
+    .log-detail .drow{ gap:10px; }
+    .log-detail .dv{ max-width:60%; overflow-wrap:anywhere; }
+    .sum-compare{ display:block; overflow-x:auto; -webkit-overflow-scrolling:touch; white-space:nowrap; }
+  }
+  @media (max-width:380px){
+    .frame{ padding-left:10px; padding-right:10px; }
+    .masthead{ gap:10px; }
+    .masthead > div:last-child{ flex-basis:145px; min-width:145px; }
+    .masthead h1{ font-size:24px; }
+    .masthead .sub{ font-size:14px; line-height:1.38; }
+    .clock{ font-size:15px; text-align:right; }
+    .reg-watermark{ font-size:17px; font-weight:600; line-height:1.2; text-align:right; margin-top:2px; }
+    .scoreboard{ grid-template-columns:repeat(2,1fr); }
+  }
+
+  .panel{
+    background:var(--panel);
+    border:1px solid var(--hair);
+    border-radius:2px;
+    padding:20px 20px 22px;
+  }
+  .panel h2{
+    font-family:'Avenir Next',sans-serif; font-size:11.5px; text-transform:uppercase;
+    letter-spacing:1.4px; color:var(--steel); margin:0 0 14px; font-weight:600;
+  }
+  .sync-status{
+    font-family:'Avenir Next',sans-serif; font-size:11px; font-weight:700; padding:3px 9px;
+    border-radius:2px; background:var(--red-dim); color:#F2DED8; text-transform:uppercase; letter-spacing:0.5px;
+  }
+  .sync-status.connected{ background:var(--green-dim); color:#DCEFE2; }
+  .sync-status.syncing{ background:var(--amber-dim); color:#F3E2C2; }
+
+  .mindset-options{ display:flex; gap:10px; flex-wrap:wrap; margin-top:2px; }
+  .mindset-opt{
+    flex:1; min-width:150px; padding:11px 12px; border-radius:2px; cursor:pointer;
+    font-family:'Avenir Next',sans-serif; font-size:13.5px; font-weight:600;
+    background:transparent; border:1px solid var(--hair); color:var(--paper);
+    transition:opacity .15s;
+  }
+  .mindset-opt:hover{ opacity:0.8; }
+  .mindset-opt.chosen-good{ background:var(--green-dim); color:#DCEFE2; border-color:transparent; }
+  .mindset-opt.chosen-caution{ background:var(--amber-dim); color:#F3E2C2; border-color:transparent; }
+  .mindset-reminder{
+    margin-top:14px; padding:16px 18px; border-radius:2px;
+    background:var(--panel-2); border-left:3px solid var(--amber);
+    font-family:'Iowan Old Style','Palatino Linotype',Georgia,serif;
+    font-size:15px; line-height:1.55; color:var(--paper);
+  }
+  .mindset-reminder .lead{ font-weight:700; color:var(--amber); display:block; margin-bottom:6px; font-family:'Avenir Next',sans-serif; font-size:11.5px; text-transform:uppercase; letter-spacing:1px; }
+
+  .mindset-gate-note{
+    margin-top:0; padding:12px 14px; border-radius:2px;
+    font-family:'Avenir Next',sans-serif; font-size:13.5px; font-weight:600;
+    background:var(--red-dim); color:#F2DED8;
+  }
+  .mindset-gate-note.clear{ background:var(--green-dim); color:#DCEFE2; }
+
+  .field{ margin-bottom:12px; }
+  .field label{
+    display:block; font-family:'Avenir Next',sans-serif; font-size:12px;
+    color:var(--steel); margin-bottom:5px;
+  }
+  .field input, .field select, .field textarea{
+    width:100%; background:var(--paper); color:var(--ink); border:1px solid var(--paper-line);
+    border-radius:2px; padding:9px 10px; font-size:14.5px; font-family:'Courier New',monospace;
+  }
+  .field select{ font-family:'Avenir Next',sans-serif; }
+  .field textarea{ font-family:'Avenir Next',sans-serif; min-height:52px; resize:vertical; }
+  .row2{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+
+  .readout{
+    margin-top:14px; background:var(--paper); color:var(--ink); border-radius:2px;
+    padding:14px 16px;
+  }
+  .readout-row{
+    display:flex; justify-content:space-between; align-items:baseline;
+    padding:6px 0; border-bottom:1px solid var(--paper-line);
+  }
+  .readout-row:last-child{ border-bottom:none; }
+  .readout-row .k{ font-family:'Avenir Next',sans-serif; font-size:12.5px; color:var(--ink-soft); }
+  .readout-row .v{ font-family:'Courier New',monospace; font-size:16px; font-weight:700; }
+  .v.warn{ color:var(--red-dim); }
+  .v.ok{ color:var(--green-dim); }
+
+  .reasons{ margin-top:6px; }
+  .reasons .field label{ color:var(--steel); }
+
+  .radiogroup{ display:flex; gap:10px; margin-top:4px; }
+  .radiogroup label{
+    flex:1; font-family:'Avenir Next',sans-serif; font-size:13px; text-align:center;
+    padding:9px 6px; border:1px solid var(--hair); border-radius:2px; cursor:pointer; color:var(--steel);
+  }
+  .radiogroup input{ display:none; }
+  .radiogroup input:checked + span{ color:inherit; }
+  .radiogroup label.sel-system{ }
+  .radiogroup input#rule-system:checked ~ .rlabel{ }
+  .rchoice{ display:flex; gap:10px; margin-top:4px; }
+  .rchoice .opt{
+    flex:1; text-align:center; padding:9px 6px; border-radius:2px; cursor:pointer;
+    font-family:'Avenir Next',sans-serif; font-size:13px; border:1px solid var(--hair); color:var(--steel);
+  }
+  .rchoice .opt.active-system{ background:var(--green-dim); color:#DCEFE2; border-color:transparent; }
+  .rchoice .opt.active-deviation{ background:var(--red-dim); color:#F2DED8; border-color:transparent; }
+  .rchoice .opt.active-tf{ background:var(--amber-dim); color:#F3E2C2; border-color:transparent; }
+
+  .btn{
+    width:100%; margin-top:16px; padding:13px; border:none; border-radius:2px;
+    font-family:'Avenir Next',sans-serif; font-size:14.5px; font-weight:700; letter-spacing:0.3px;
+    cursor:pointer; transition:opacity .15s;
+  }
+  .btn:disabled{ opacity:0.35; cursor:not-allowed; }
+  .btn-execute{ background:var(--amber); color:#2A1E08; }
+  .btn-execute:hover:not(:disabled){ opacity:0.88; }
+
+  .outcome-row{ display:flex; gap:10px; margin-top:10px; }
+  .outcome-row button{
+    flex:1; padding:9px; border-radius:2px; border:1px solid var(--hair); background:transparent;
+    color:var(--paper); font-family:'Avenir Next',sans-serif; font-size:13px; cursor:pointer;
+  }
+  .outcome-row button.win{ border-color:var(--green); color:#B9E0C4; }
+  .outcome-row button.loss{ border-color:var(--red); color:#F0C3B6; }
+
+  .scoreboard{
+    margin-top:18px; display:grid; grid-template-columns:repeat(4,1fr); gap:1px;
+    background:var(--hair); border:1px solid var(--hair); border-radius:2px; overflow:hidden;
+  }
+  .stat{ background:var(--panel-2); padding:14px 10px; text-align:center; }
+  .stat .num-big{ font-family:'Courier New',monospace; font-size:20px; font-weight:700; color:var(--paper); }
+  .stat .lbl{ font-family:'Avenir Next',sans-serif; font-size:10.5px; color:var(--steel); margin-top:4px; text-transform:uppercase; letter-spacing:0.8px; }
+
+  .log{ margin-top:26px; }
+  .log h2{ font-family:'Avenir Next',sans-serif; font-size:11.5px; text-transform:uppercase; letter-spacing:1.4px; color:var(--steel); margin-bottom:10px; }
+  .log-entry{
+    display:grid; grid-template-columns: 90px 1fr 70px 60px; gap:10px; align-items:center;
+    padding:10px 0; border-bottom:1px solid var(--hair); font-family:'Avenir Next',sans-serif; font-size:12.5px;
+    cursor:pointer;
+  }
+  .log-entry:hover{ background:rgba(237,231,218,0.03); }
+  .log-entry .num{ font-size:12.5px; }
+  .log-entry .recent-datetime{ display:flex; flex-direction:column; line-height:1.2; white-space:nowrap; font-size:11.5px; }
+  .log-entry .chev{ color:var(--steel); font-size:11px; text-align:right; transition:transform .15s; }
+  .log-entry.expanded .chev{ transform:rotate(90deg); }
+  #impulseChev{ color:var(--steel); font-size:13px; transition:transform .15s; }
+  #impulseChev.expanded{ transform:rotate(90deg); }
+  .log-detail{
+    display:none; padding:14px 16px 16px; margin-bottom:8px;
+    background:var(--panel-2); border:1px solid var(--hair); border-radius:2px;
+    font-family:'Avenir Next',sans-serif; font-size:13px;
+  }
+  .log-detail.open{ display:block; }
+  .log-detail .drow{ display:flex; justify-content:space-between; padding:5px 0; border-bottom:1px solid var(--hair); }
+  .log-detail .drow:last-of-type{ border-bottom:none; }
+  .log-detail .dk{ color:var(--steel); font-size:12px; }
+  .log-detail .dv{ font-family:'Courier New',monospace; font-size:13px; text-align:right; max-width:65%; }
+  .log-detail .dsection{ margin-top:10px; }
+  .log-detail .dsection .dk{ display:block; margin-bottom:3px; }
+  .log-detail .dsection .dtext{ color:var(--paper); font-size:13px; line-height:1.4; white-space:pre-wrap; }
+  .dedit-grid{ display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:8px; }
+  .defield label{ display:block; font-size:11px; color:var(--steel); margin-bottom:4px; }
+  .defield input{
+    width:100%; background:var(--paper); color:var(--ink); border:1px solid var(--paper-line);
+    border-radius:2px; padding:7px 9px; font-size:13.5px; font-family:'Courier New',monospace;
+  }
+  .dedit-btn{
+    padding:8px 14px; border-radius:2px; font-family:'Avenir Next',sans-serif; font-size:12.5px;
+    font-weight:600; cursor:pointer;
+  }
+  .defield textarea{
+    width:100%; background:var(--paper); color:var(--ink); border:1px solid var(--paper-line);
+    border-radius:2px; padding:8px 9px; font-size:13px; font-family:'Avenir Next',sans-serif; min-height:44px; resize:vertical;
+  }
+  .defield select{
+    width:100%; background:var(--paper); color:var(--ink); border:1px solid var(--paper-line);
+    border-radius:2px; padding:7px 9px; font-size:13px; font-family:'Avenir Next',sans-serif;
+  }
+  .pf-toggle{ display:flex; gap:8px; margin-top:2px; }
+  .pf-toggle .opt{
+    flex:1; text-align:center; padding:7px 6px; border-radius:2px; cursor:pointer;
+    font-family:'Avenir Next',sans-serif; font-size:12.5px; border:1px solid var(--hair); color:var(--steel);
+  }
+  .pf-toggle .opt.active-yes{ background:var(--green-dim); color:#DCEFE2; border-color:transparent; }
+  .pf-toggle .opt.active-no{ background:var(--red-dim); color:#F2DED8; border-color:transparent; }
+  .dedit-btn.edit{ margin-top:4px; background:transparent; border:1px solid var(--amber-dim); color:var(--amber); }
+  .dedit-btn.save{ background:var(--amber); border:none; color:#2A1E08; }
+  .dedit-btn.cancel{ background:transparent; border:1px solid var(--hair); color:var(--steel); }
+  .tag{ display:inline-block; padding:2px 7px; border-radius:2px; font-size:10.5px; font-weight:700; }
+  .tag.system{ background:var(--green-dim); color:#DCEFE2; }
+  .tag.deviation{ background:var(--red-dim); color:#F2DED8; }
+  .tag.pending{ background:var(--amber-dim); color:#F3E2C2; }
+  .empty{ color:var(--steel); font-family:'Avenir Next',sans-serif; font-size:13px; padding:14px 0; }
+
+  .sum-grid{
+    display:grid; grid-template-columns:repeat(3,1fr); gap:1px;
+    background:var(--hair); border:1px solid var(--hair); border-radius:2px; overflow:hidden; margin-bottom:18px;
+  }
+  @media (max-width:600px){ .sum-grid{ grid-template-columns:repeat(2,1fr); } }
+  .sum-stat{ background:var(--panel-2); padding:14px 10px; text-align:center; }
+  .sum-stat .num-big{ font-family:'Courier New',monospace; font-size:19px; font-weight:700; color:var(--paper); }
+  .sum-stat .lbl{ font-family:'Avenir Next',sans-serif; font-size:10px; color:var(--steel); margin-top:4px; text-transform:uppercase; letter-spacing:0.6px; }
+
+  .sum-compare{
+    width:100%; border-collapse:collapse; margin-bottom:18px; font-family:'Avenir Next',sans-serif; font-size:13px;
+  }
+  .sum-compare th{
+    text-align:left; font-size:10.5px; text-transform:uppercase; letter-spacing:0.8px; color:var(--steel);
+    font-weight:600; padding:6px 8px; border-bottom:1px solid var(--hair);
+  }
+  .sum-compare td{ padding:9px 8px; border-bottom:1px solid var(--hair); font-family:'Courier New',monospace; font-size:13px; }
+  .sum-compare td:first-child{ font-family:'Avenir Next',sans-serif; font-size:12.5px; color:var(--steel); }
+  .sum-compare tr:last-child td{ border-bottom:none; }
+
+  .sum-section-title{
+    font-family:'Avenir Next',sans-serif; font-size:11.5px; text-transform:uppercase; letter-spacing:1.2px;
+    color:var(--steel); margin:0 0 10px;
+  }
+  .insight-list{ list-style:none; margin:0 0 6px; padding:0; }
+  .insight-list li{
+    display:flex; gap:10px; padding:10px 12px; margin-bottom:8px; background:var(--panel-2);
+    border-left:2px solid var(--amber); border-radius:2px; font-family:'Avenir Next',sans-serif;
+    font-size:13px; line-height:1.45; color:var(--paper);
+  }
+  .insight-list li.good{ border-left-color:var(--green); }
+  .insight-list li.warn{ border-left-color:var(--red); }
+  .sum-empty{ font-family:'Avenir Next',sans-serif; font-size:13px; color:var(--steel); padding:6px 0; }
+
+  /* iPhone/iOS Safari: keep form controls at 16px to prevent automatic focus zoom. */
+  @media (max-width:760px){
+    input, select, textarea{ font-size:16px !important; }
+  }
+</style>
+</head>
+<body>
+
+<div class="reg-overlay" id="regOverlay">
+  <div class="reg-card">
+    <h1 class="reg-title">Activate Your Copy</h1>
+    <p class="reg-sub">Enter the name and email used for your purchase. Your activation details stay on this device and are shown each time you open the app.</p>
+    <div class="field">
+      <label>Full name</label>
+      <input type="text" id="regName">
+    </div>
+    <div class="field" style="margin-bottom:0;">
+      <label>Email</label>
+      <input type="email" id="regEmail">
+    </div>
+    <div class="reg-error" id="regError" style="display:none;"></div>
+    <button class="btn btn-execute" id="regSubmitBtn" style="margin-top:16px;">Activate on This Device</button>
+  </div>
+</div>
+
+<div class="frame">
+
+  <div class="masthead">
+    <div>
+      <h1>Execution Flow</h1>
+      <div class="sub">Pre-Trade Gate · Risk Sizing · Rule-Adherence Log</div>
+    </div>
+    <div>
+      <div class="clock" id="clock"></div>
+      <div class="reg-watermark" id="regWatermark"></div>
+    </div>
+  </div>
+
+  <div class="panel sync-panel" id="syncPanel" style="margin-bottom:18px;">
+    <div style="display:flex; justify-content:space-between; align-items:center; cursor:pointer;" id="syncHeader">
+      <h2 style="margin:0;">Backup &amp; Restore</h2>
+      <span class="sync-status" id="syncStatusBadge">Local only</span>
+    </div>
+    <div id="syncBody" style="margin-top:14px; display:none;">
+      <div class="sans" style="font-size:12.5px; color:var(--steel); line-height:1.5; margin-bottom:12px;">
+        Export your trades, saved bias notes, and app preferences to a backup file. On supported desktop browsers, the app can update the same backup file on later exports. On iPhone/Safari, the browser may create a new download because it does not allow silent replacement of an existing file. Nothing leaves this device automatically. Activation stays device-specific.
+      </div>
+      <div style="display:flex; gap:8px; flex-wrap:wrap;">
+        <button class="dedit-btn save" id="exportBtn" style="margin-top:0;">Export / Update backup (.json)</button>
+        <button class="dedit-btn edit" id="importBtn" style="margin-top:0;">Import data</button>
+        <input type="file" id="importFileInput" accept="application/json" style="display:none;">
+      </div>
+      <div class="install-note" style="margin-top:14px; padding:10px 12px; background:var(--panel-2); border-left:2px solid var(--amber); font-family:'Avenir Next',sans-serif; font-size:11.5px; line-height:1.5; color:var(--steel);">
+        <strong style="color:var(--paper);">iPhone:</strong> Open this app in Safari, tap <strong style="color:var(--paper);">Share</strong> → <strong style="color:var(--paper);">Add to Home Screen</strong>. Launch it from the new Home Screen icon for the app-style view.
+      </div>
+      <div class="sans" id="syncMeta" style="font-size:11.5px; color:var(--steel); margin-top:10px;"></div>
+    </div>
+  </div>
+
+  <div class="panel" style="margin-bottom:18px;">
+    <h2>Bias</h2>
+    <div class="field">
+      <label>Script</label>
+      <select id="biasScriptSelect" aria-label="Select script" style="width:100%; text-transform:uppercase; background:var(--paper); color:var(--ink); border:1px solid var(--paper-line); border-radius:2px; padding:9px 10px; font-size:14.5px; font-family:'Courier New',monospace; min-height:44px;">
+        <option value="">Select a script…</option>
+        <option value="__custom__">＋ New / type script…</option>
+      </select>
+      <input type="text" id="biasScriptCustom" placeholder="Type a new script, e.g. RELIANCE, EURUSD, NIFTY FUT" aria-label="Type a new script" style="display:none; width:100%; margin-top:8px; text-transform:uppercase; background:var(--paper); color:var(--ink); border:1px solid var(--paper-line); border-radius:2px; padding:9px 10px; font-size:14.5px; font-family:'Courier New',monospace; min-height:44px;">
+    </div>
+    <div class="rchoice" id="biasTfToggle" style="margin-bottom:12px;">
+      <div class="opt active-tf" id="tf-monthly" data-tf="monthly">Monthly</div>
+      <div class="opt" id="tf-weekly" data-tf="weekly">Weekly</div>
+      <div class="opt" id="tf-daily" data-tf="daily">Daily</div>
+    </div>
+    <div class="field" style="margin-bottom:0;">
+      <label id="biasFieldLabel">Monthly bias</label>
+      <textarea id="biasText" style="width:100%; min-height:52px; background:var(--paper); color:var(--ink); border:1px solid var(--paper-line); border-radius:2px; padding:9px 10px; font-size:13.5px; font-family:'Avenir Next',sans-serif; resize:vertical;"></textarea>
+      <div class="sans" id="biasMeta" style="font-size:11px; color:var(--steel); margin-top:4px;"></div>
+    </div>
+  </div>
+
+  <div class="panel mindset-panel" style="margin-bottom:18px;">
+    <h2>What's up?</h2>
+    <div class="mindset-options">
+      <button class="mindset-opt" id="mo-setup">I've got a real setup</button>
+      <button class="mindset-opt" id="mo-bored">Nothing lined up, just bored</button>
+      <button class="mindset-opt" id="mo-fomo">Chasing a move (FOMO)</button>
+    </div>
+    <div class="mindset-reminder" id="mindsetReminder" style="display:none;"></div>
+  </div>
+
+  <div class="holiday-bar" id="holidayBar">
+    <span>📅</span>
+    <span id="holidayText" style="flex:1;"></span>
+    <span id="holidayDismiss" style="cursor:pointer; font-weight:700; padding:0 4px;">✕</span>
+  </div>
+
+  <div class="grid">
+    <!-- LEFT: REASONING -->
+    <div class="panel panel-reasoning">
+      <div class="mindset-gate-note" id="mindsetGateNote">Answer "What's up?" above with <strong>"I've got a real setup"</strong> to unlock execution.</div>
+
+      <h2 style="margin-top:18px;">Rule Adherence</h2>
+      <div class="rchoice">
+        <div class="opt" id="opt-system" data-val="system">Following system</div>
+        <div class="opt" id="opt-deviation" data-val="deviation">Deviation / impulse</div>
+      </div>
+
+      <div class="reasons" style="margin-top:20px;">
+        <h2 style="margin-top:0;">Reasoning</h2>
+        <div class="field">
+          <label>1. Primary trigger</label>
+          <textarea id="r1" placeholder="What exact condition fired?"></textarea>
+        </div>
+        <div class="field">
+          <label>2. Confirmation</label>
+          <textarea id="r2" placeholder="What confirmed it?"></textarea>
+        </div>
+        <div class="field">
+          <label>3. Invalidation</label>
+          <textarea id="r3" placeholder="What proves this idea wrong?"></textarea>
+        </div>
+        <div class="field">
+          <label>4. Context / notes</label>
+          <textarea id="r4" placeholder="Anything else worth remembering"></textarea>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT: RISK + EXECUTE -->
+    <div class="panel">
+      <h2>Risk &amp; Size</h2>
+      <div class="field">
+        <label>Stock / script name</label>
+        <input type="text" id="instrument" placeholder="e.g. RELIANCE, EURUSD, NIFTY FUT" style="font-family:'Avenir Next',sans-serif; text-transform:uppercase;">
+      </div>
+      <div class="field">
+        <label>Account size ($)</label>
+        <input type="number" id="account" inputmode="decimal" placeholder="10000">
+      </div>
+      <div class="row2">
+        <div class="field">
+          <label>Risk per trade (%)</label>
+          <input type="number" id="riskPct" inputmode="decimal" placeholder="1">
+        </div>
+        <div class="field">
+          <label>Value per point ($)</label>
+          <input type="number" id="valuePerPoint" inputmode="decimal" placeholder="10">
+        </div>
+      </div>
+      <div class="row2">
+        <div class="field">
+          <label>Entry price</label>
+          <input type="number" id="entry" inputmode="decimal" placeholder="0.00">
+        </div>
+        <div class="field">
+          <label>Stop price</label>
+          <input type="number" id="stop" inputmode="decimal" placeholder="0.00">
+        </div>
+      </div>
+      <div class="field">
+        <label>Target price</label>
+        <input type="number" id="target" inputmode="decimal" placeholder="0.00">
+      </div>
+      <div class="field">
+        <label>Quantity / lot size (optional)</label>
+        <input type="number" id="quantity" inputmode="decimal">
+      </div>
+
+      <div class="readout">
+        <div class="readout-row"><span class="k">$ at risk</span><span class="v" id="outRisk">—</span></div>
+        <div class="readout-row"><span class="k">Position size</span><span class="v" id="outSize">—</span></div>
+        <div class="readout-row"><span class="k">Reward : risk</span><span class="v" id="outRR">—</span></div>
+        <div class="readout-row"><span class="k">Risk as % of account</span><span class="v" id="outRiskPct">—</span></div>
+      </div>
+      <div class="sans" style="font-size:11.5px; color:var(--steel); margin-top:8px; line-height:1.4;">
+        Fill Quantity to back-calculate risk % and $ at risk from a size you've already decided. Leave it blank to size from Risk %.
+      </div>
+
+      <button class="btn btn-execute" id="logBtn" disabled style="margin-top:20px;">Log &amp; Clear to Execute</button>
+      <div class="sans" style="font-size:11.5px; color:var(--steel); margin-top:8px; line-height:1.4;">Required before logging: a real setup, rule choice, script, primary trigger, entry/stop, value per point, and either risk % + account size or a known quantity.</div>
+
+      <div class="scoreboard">
+        <div class="stat"><div class="num-big" id="statTotal">0</div><div class="lbl">Logged</div></div>
+        <div class="stat"><div class="num-big" id="statSystemPct">—</div><div class="lbl">On-system</div></div>
+        <div class="stat"><div class="num-big" id="statAvgRR">—</div><div class="lbl">Avg planned RR</div></div>
+        <div class="stat"><div class="num-big" id="statStreak">0</div><div class="lbl">Loss streak</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel impulse-panel" style="margin-top:22px; margin-bottom:22px;">
+    <div style="display:flex; justify-content:space-between; align-items:center; cursor:pointer;" id="impulseHeader">
+      <h2 style="margin:0;">Already Took an Impulsive Trade?</h2>
+      <span class="chev" id="impulseChev">▸</span>
+    </div>
+    <div id="impulseBody" style="margin-top:14px; display:none;">
+      <div class="sans" style="font-size:12.5px; color:var(--steel); line-height:1.5; margin-bottom:14px;">
+        For trades taken outside the normal ticket flow — no gate, no mindset check. It's logged straight as a deviation so it still counts toward your stats and doesn't quietly disappear from your record.
+      </div>
+      <div class="field">
+        <label>When did you take it?</label>
+        <input type="datetime-local" id="im-ts">
+      </div>
+      <div class="row2">
+        <div class="field">
+          <label>Stock / script</label>
+          <input type="text" id="im-instrument" style="text-transform:uppercase;">
+        </div>
+        <div class="field">
+          <label>Quantity / lot size</label>
+          <input type="number" id="im-quantity" inputmode="decimal">
+        </div>
+      </div>
+      <div class="row2">
+        <div class="field">
+          <label>Entry price</label>
+          <input type="number" id="im-entry" inputmode="decimal">
+        </div>
+        <div class="field">
+          <label>Stop price</label>
+          <input type="number" id="im-stop" inputmode="decimal">
+        </div>
+      </div>
+      <div class="row2">
+        <div class="field">
+          <label>Target price</label>
+          <input type="number" id="im-target" inputmode="decimal">
+        </div>
+        <div class="field">
+          <label>Value per point ($)</label>
+          <input type="number" id="im-vpp" inputmode="decimal">
+        </div>
+      </div>
+      <div class="row2">
+        <div class="field">
+          <label>Exit price (if closed)</label>
+          <input type="number" id="im-exitPrice" inputmode="decimal">
+        </div>
+        <div class="field">
+          <label>Actual P&amp;L ($, if known)</label>
+          <input type="number" id="im-actualPnl" inputmode="decimal">
+        </div>
+      </div>
+      <div class="field">
+        <label>What actually happened / what triggered it</label>
+        <textarea id="im-notes" placeholder="Be honest — this is the record that helps you catch the pattern"></textarea>
+      </div>
+      <button class="btn btn-execute" id="logImpulseBtn" style="background:var(--red); color:#2A1006;">Save This Entry</button>
+    </div>
+  </div>
+
+  <div class="log">
+    <h2>Recent Trades</h2>
+    <div id="logList"><div class="empty">No trades logged yet.</div></div>
+  </div>
+
+  <div class="panel" style="margin-top:22px;">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+      <h2 style="margin:0;">Performance &amp; Behavior Summary</h2>
+    </div>
+    <div class="field" style="margin-top:10px;">
+      <label>Period</label>
+      <select id="summaryPeriod">
+        <option value="all">All time</option>
+        <option value="today">Today</option>
+        <option value="week">This week</option>
+        <option value="month">This month</option>
+        <option value="custom">Custom range</option>
+      </select>
+    </div>
+    <div class="row2" id="customRangeFields" style="display:none;">
+      <div class="field">
+        <label>From</label>
+        <input type="date" id="summaryStart">
+      </div>
+      <div class="field">
+        <label>To</label>
+        <input type="date" id="summaryEnd">
+      </div>
+    </div>
+    <div style="display:flex; gap:8px; flex-wrap:wrap;">
+      <button class="btn btn-execute" id="genSummaryBtn" style="margin-top:6px; flex:1; min-width:160px;">Generate Summary</button>
+      <button class="dedit-btn edit" id="exportCsvBtn" style="margin-top:6px; flex:1; min-width:160px;">Download trade history (.csv)</button>
+    </div>
+    <div id="summaryContent" style="margin-top:18px; display:none;"></div>
+  </div>
+
+</div>
+
+<script>
+const STORAGE_KEY = 'execution-console:execution-log';
+const STREAK_KEY = 'execution-console:streak-state';
+const LOSS_TRIGGER = 2;
+const EXPORT_STATE_KEY = 'execution-console:last-export-signature';
+let exportFileHandle = null;
+
+let logData = [];
+let streakState = { consecutiveLosses: 0, cooldownUntil: null };
+let ruleChoice = null;
+let mindsetChoice = null;
+
+function updateClock(){
+  const d = new Date();
+  document.getElementById('clock').textContent = d.toLocaleString(undefined, {
+    weekday:'short', hour:'2-digit', minute:'2-digit', second:'2-digit'
+  });
+}
+setInterval(updateClock, 1000); updateClock();
+
+async function loadState(){
+  checkRegistration();
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    logData = raw ? JSON.parse(raw) : [];
+  }catch(e){ logData = []; }
+  try{
+    const raw2 = localStorage.getItem(STREAK_KEY);
+    streakState = raw2 ? JSON.parse(raw2) : { consecutiveLosses:0, cooldownUntil:null };
+  }catch(e){ streakState = { consecutiveLosses:0, cooldownUntil:null }; }
+  recomputeStreakFromLog();
+  await saveStreak();
+  loadDailyBias();
+  renderAll();
+}
+
+function getExportSignature(){
+  try{ return JSON.stringify(logData); }catch(e){ return String(logData.length); }
+}
+
+function markExportNeededIfChanged(){
+  let last='';
+  try{ last = localStorage.getItem(EXPORT_STATE_KEY) || ''; }catch(e){}
+  if(last && last !== getExportSignature()){
+    setSyncStatus('pending', 'Export newer logs');
+    updateSyncMeta('You have newer trade data since your last export. Export again to create an updated backup.');
+  }
+}
+
+async function saveLog(){
+  try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(logData)); }
+  catch(e){ console.error('save log failed', e); }
+  markExportNeededIfChanged();
+}
+async function saveStreak(){
+  try{ localStorage.setItem(STREAK_KEY, JSON.stringify(streakState)); }
+  catch(e){ console.error('save streak failed', e); }
+}
+
+function renderMindsetGate(){
+  const note = document.getElementById('mindsetGateNote');
+  if(mindsetChoice === 'setup'){
+    note.classList.add('clear');
+    note.innerHTML = 'Setup confirmed — you can log this ticket below.';
+  } else {
+    note.classList.remove('clear');
+    note.innerHTML = 'Answer "What\'s up?" above with <strong>"I\'ve got a real setup"</strong> to unlock execution.';
+  }
+  updateExecuteButton();
+}
+
+function calc(){
+  const instrument = document.getElementById('instrument').value.trim();
+  const account = parseFloat(document.getElementById('account').value);
+  let riskPct = parseFloat(document.getElementById('riskPct').value);
+  const vpp = parseFloat(document.getElementById('valuePerPoint').value);
+  const entry = parseFloat(document.getElementById('entry').value);
+  const stop = parseFloat(document.getElementById('stop').value);
+  const target = parseFloat(document.getElementById('target').value);
+  const quantity = parseFloat(document.getElementById('quantity').value);
+
+  let dollarRisk = null, size = null, rr = null, riskPctOfAcct = null;
+
+  const stopDist = (!isNaN(entry) && !isNaN(stop)) ? Math.abs(entry - stop) : null;
+  const targetDist = (!isNaN(entry) && !isNaN(target)) ? Math.abs(target - entry) : null;
+
+  if(!isNaN(quantity) && quantity > 0 && stopDist && !isNaN(vpp)){
+    // Reverse mode: quantity is known, back-calculate $ risk and risk %
+    dollarRisk = stopDist * vpp * quantity;
+    size = quantity;
+    if(!isNaN(account) && account){
+      riskPct = (dollarRisk/account)*100;
+      const riskPctInput = document.getElementById('riskPct');
+      const rounded = riskPct.toFixed(2);
+      if(riskPctInput.value !== rounded) riskPctInput.value = rounded;
+    }
+  } else if(!isNaN(account) && !isNaN(riskPct)){
+    // Forward mode: risk % is known, derive position size
+    dollarRisk = account * (riskPct/100);
+    if(dollarRisk !== null && stopDist && vpp){
+      size = dollarRisk / (stopDist * vpp);
+    }
+  }
+
+  if(stopDist && targetDist){
+    rr = targetDist / stopDist;
+  }
+  if(dollarRisk !== null && account){
+    riskPctOfAcct = (dollarRisk/account)*100;
+  }
+
+  document.getElementById('outRisk').textContent = dollarRisk!==null ? '$'+dollarRisk.toFixed(2) : '—';
+  document.getElementById('outSize').textContent = size!==null ? size.toFixed(2)+' units' : '—';
+  const rrEl = document.getElementById('outRR');
+  rrEl.textContent = rr!==null ? rr.toFixed(2)+' : 1' : '—';
+  rrEl.className = 'v' + (rr!==null ? (rr>=1.5?' ok':(rr<1?' warn':'')) : '');
+  document.getElementById('outRiskPct').textContent = riskPctOfAcct!==null ? riskPctOfAcct.toFixed(2)+'%' : '—';
+
+  updateExecuteButton();
+
+  return { instrument, account, riskPct, vpp, entry, stop, target, quantity, dollarRisk, size, rr };
+}
+
+function updateExecuteButton(){
+  const btn = document.getElementById('logBtn');
+  const gateOpen = mindsetChoice === 'setup';
+  const hasRule = ruleChoice !== null;
+  const hasInstrument = document.getElementById('instrument').value.trim().length > 0;
+  const hasTrigger = document.getElementById('r1').value.trim().length > 0;
+  const account = parseFloat(document.getElementById('account').value);
+  const riskPct = parseFloat(document.getElementById('riskPct').value);
+  const vpp = parseFloat(document.getElementById('valuePerPoint').value);
+  const entry = parseFloat(document.getElementById('entry').value);
+  const stop = parseFloat(document.getElementById('stop').value);
+  const quantity = parseFloat(document.getElementById('quantity').value);
+  const hasAccountRisk = !isNaN(account) && account > 0 && !isNaN(riskPct) && riskPct > 0;
+  const hasQuantity = !isNaN(quantity) && quantity > 0;
+  const hasRiskInputs = !isNaN(vpp) && vpp > 0 && !isNaN(entry) && !isNaN(stop) && entry !== stop && (hasAccountRisk || hasQuantity);
+  btn.disabled = !(gateOpen && hasRule && hasInstrument && hasTrigger && hasRiskInputs);
+}
+
+['instrument','account','riskPct','valuePerPoint','entry','stop','target','quantity','r1','r2','r3','r4'].forEach(id=>{
+  document.getElementById(id).addEventListener('input', calc);
+});
+
+document.getElementById('opt-system').addEventListener('click', ()=>{
+  ruleChoice = 'system';
+  document.getElementById('opt-system').classList.add('active-system');
+  document.getElementById('opt-deviation').classList.remove('active-deviation');
+  updateExecuteButton();
+});
+document.getElementById('opt-deviation').addEventListener('click', ()=>{
+  ruleChoice = 'deviation';
+  document.getElementById('opt-deviation').classList.add('active-deviation');
+  document.getElementById('opt-system').classList.remove('active-system');
+  updateExecuteButton();
+});
+
+function renderStats(){
+  const total = logData.length;
+  document.getElementById('statTotal').textContent = total;
+  if(total){
+    const systemCount = logData.filter(t=>t.rule==='system').length;
+    document.getElementById('statSystemPct').textContent = Math.round((systemCount/total)*100)+'%';
+    const rrs = logData.map(t=>t.rr).filter(v=>typeof v==='number' && !isNaN(v));
+    document.getElementById('statAvgRR').textContent = rrs.length ? (rrs.reduce((a,b)=>a+b,0)/rrs.length).toFixed(2) : '—';
+  } else {
+    document.getElementById('statSystemPct').textContent = '—';
+    document.getElementById('statAvgRR').textContent = '—';
+  }
+  document.getElementById('statStreak').textContent = streakState.consecutiveLosses;
+}
+
+let expandedIds = new Set();
+let editingIds = new Set();
+let confirmDeleteIds = new Set();
+
+function renderLogList(){
+  const el = document.getElementById('logList');
+  if(!logData.length){
+    el.innerHTML = '<div class="empty">No trades logged yet.</div>';
+    return;
+  }
+  const recent = logData.slice().sort((a,b)=> new Date(b.ts) - new Date(a.ts)).slice(0,12);
+  const rows = recent.map(t=>{
+    const loggedAt = new Date(t.ts);
+    const date = loggedAt.toLocaleDateString(undefined,{day:'2-digit',month:'short',year:'numeric'});
+    const time = loggedAt.toLocaleTimeString(undefined,{hour:'2-digit',minute:'2-digit'});
+    const tagClass = t.rule === 'system' ? 'system' : 'deviation';
+    const tagLabel = t.rule === 'system' ? 'System' : 'Deviation';
+    const outcomeTag = t.outcome === 'win' ? '<span class="tag" style="background:var(--green-dim);color:#DCEFE2;">Win</span>'
+                      : t.outcome === 'loss' ? '<span class="tag" style="background:var(--red-dim);color:#F2DED8;">Loss</span>'
+                      : t.outcome === 'breakeven' ? '<span class="tag" style="background:var(--amber-dim);color:#F3E2C2;">BE</span>'
+                      : '<span class="tag pending">Open</span>';
+    const rrText = typeof t.rr === 'number' && !isNaN(t.rr) ? t.rr.toFixed(2)+':1' : '—';
+    const ticker = t.instrument ? escapeHtml(t.instrument).toUpperCase() : '—';
+    const trigger = t.reasoning && t.reasoning.r1 ? escapeHtml(t.reasoning.r1).slice(0,44) : 'No trigger noted';
+    const isOpen = expandedIds.has(t.id);
+    const afterFactBadge = t.loggedAfterFact ? '<span class="tag" style="background:var(--red-dim);color:#F2DED8;">After-fact</span> &nbsp;' : '';
+    const outcomeCell = t.outcome ? outcomeTag : `<span onclick="event.stopPropagation()">${renderOutcomeButtons(t.id)}</span>`;
+    return `<div class="log-entry${isOpen?' expanded':''}" data-id="${t.id}">
+      <span class="num recent-datetime"><span>${date}</span><span>${time}</span></span>
+      <span>${afterFactBadge}<span class="tag ${tagClass}">${tagLabel}</span> &nbsp;<strong class="num">${ticker}</strong> &nbsp;${trigger}</span>
+      <span class="num">${rrText}</span>
+      <span id="outcome-${t.id}" style="display:flex;align-items:center;gap:6px;justify-content:flex-end;">${outcomeCell}<span class="chev">▸</span></span>
+    </div>
+    <div class="log-detail${isOpen?' open':''}" id="detail-${t.id}">${renderDetail(t)}</div>`;
+  }).join('');
+  el.innerHTML = rows;
+
+  recent.forEach(t=>{
+    const rowEl = el.querySelector(`.log-entry[data-id="${t.id}"]`);
+    if(rowEl){
+      rowEl.addEventListener('click', ()=>{
+        if(expandedIds.has(t.id)) expandedIds.delete(t.id);
+        else expandedIds.add(t.id);
+        renderLogList();
+      });
+    }
+    if(!t.outcome){
+      const winBtn = document.getElementById('win-'+t.id);
+      const lossBtn = document.getElementById('loss-'+t.id);
+      if(winBtn) winBtn.addEventListener('click', (e)=>{ e.stopPropagation(); recordOutcome(t.id,'win'); });
+      if(lossBtn) lossBtn.addEventListener('click', (e)=>{ e.stopPropagation(); recordOutcome(t.id,'loss'); });
+    }
+  });
+}
+
+function toDatetimeLocal(iso){
+  const d = new Date(iso);
+  const pad = n => String(n).padStart(2,'0');
+  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+function renderDetail(t){
+  const fmt = v => (typeof v === 'number' && !isNaN(v)) ? v : null;
+  const money = v => fmt(v)!==null ? '$'+v.toFixed(2) : '—';
+  const px = v => fmt(v)!==null ? v.toFixed(4).replace(/0+$/,'').replace(/\.$/,'') : '—';
+  const dateStr = new Date(t.ts).toLocaleString(undefined,{weekday:'short', year:'numeric', month:'short', day:'numeric', hour:'2-digit', minute:'2-digit'});
+  const r = t.reasoning || {};
+  const reasonBlock = (label, text) => text ? `<div class="dsection"><span class="dk">${label}</span><div class="dtext">${escapeHtml(text)}</div></div>` : '';
+  const isEditing = editingIds.has(t.id);
+
+  const riskSizeBlock = isEditing ? `
+    <div class="dedit-grid">
+      <div class="defield"><label>Trade date/time</label><input type="datetime-local" id="e-ts-${t.id}" value="${toDatetimeLocal(t.ts)}"></div>
+      <div class="defield"><label>Stock / script</label><input type="text" id="e-instrument-${t.id}" value="${t.instrument ? escapeHtml(t.instrument) : ''}" style="text-transform:uppercase;"></div>
+      <div class="defield"><label>Account size ($)</label><input type="number" id="e-account-${t.id}" value="${fmt(t.account)!==null?t.account:''}"></div>
+      <div class="defield"><label>Risk per trade (%)</label><input type="number" id="e-riskPct-${t.id}" value="${fmt(t.riskPct)!==null?t.riskPct:''}"></div>
+      <div class="defield"><label>Value per point ($)</label><input type="number" id="e-vpp-${t.id}" value="${fmt(t.vpp)!==null?t.vpp:''}"></div>
+      <div class="defield"><label>Entry price</label><input type="number" id="e-entry-${t.id}" value="${fmt(t.entry)!==null?t.entry:''}"></div>
+      <div class="defield"><label>Stop price</label><input type="number" id="e-stop-${t.id}" value="${fmt(t.stop)!==null?t.stop:''}"></div>
+      <div class="defield"><label>Target price</label><input type="number" id="e-target-${t.id}" value="${fmt(t.target)!==null?t.target:''}"></div>
+      <div class="defield"><label>Quantity / lot size</label><input type="number" id="e-quantity-${t.id}" value="${fmt(t.quantity)!==null?t.quantity:''}" placeholder="Leave blank to use risk %"></div>
+    </div>
+    <div style="display:flex; gap:8px; margin-top:12px;">
+      <button class="dedit-btn save" onclick="saveEdit('${t.id}')">Save changes</button>
+      <button class="dedit-btn cancel" onclick="cancelEdit('${t.id}')">Cancel</button>
+    </div>
+  ` : `
+    <div class="drow"><span class="dk">Instrument</span><span class="dv">${t.instrument ? escapeHtml(t.instrument).toUpperCase() : '—'}</span></div>
+    <div class="drow"><span class="dk">Account size</span><span class="dv">${money(t.account)}</span></div>
+    <div class="drow"><span class="dk">Risk per trade</span><span class="dv">${fmt(t.riskPct)!==null ? t.riskPct+'%' : '—'}</span></div>
+    <div class="drow"><span class="dk">Value per point</span><span class="dv">${fmt(t.vpp)!==null ? '$'+t.vpp : '—'}</span></div>
+    <div class="drow"><span class="dk">Entry / Stop / Target</span><span class="dv">${px(t.entry)} / ${px(t.stop)} / ${px(t.target)}</span></div>
+    <div class="drow"><span class="dk">$ at risk</span><span class="dv">${money(t.dollarRisk)}</span></div>
+    <div class="drow"><span class="dk">Position size</span><span class="dv">${fmt(t.size)!==null ? t.size.toFixed(2)+' units' : '—'}</span></div>
+    <div class="drow"><span class="dk">Reward : risk</span><span class="dv">${fmt(t.rr)!==null ? t.rr.toFixed(2)+' : 1' : '—'}</span></div>
+    <button class="dedit-btn edit" onclick="startEdit('${t.id}')">Edit risk &amp; size</button>
+  `;
+
+  const isPostEditing = editingPostIds.has(t.id);
+  const outcomeLabel = t.outcome === 'win' ? 'Win' : t.outcome === 'loss' ? 'Loss' : t.outcome === 'breakeven' ? 'Breakeven' : 'Open / not yet recorded';
+  const followYes = postFollowChoice[t.id] === true || (postFollowChoice[t.id] === undefined && t.followedExitPlan === true);
+  const followNo = postFollowChoice[t.id] === false || (postFollowChoice[t.id] === undefined && t.followedExitPlan === false);
+  const exitReasons = ['Stop hit','Trailing stop hit','Target hit','Manual exit','Time-based exit','Other'];
+  const hasPostData = t.exitPrice !== null || t.exitReason || t.followedExitPlan !== null || t.actualPnl !== null || t.postTradeNotes;
+
+  const postTradeBlock = isPostEditing ? `
+    <div class="dedit-grid">
+      <div class="defield"><label>Exit price</label><input type="number" id="e-exitPrice-${t.id}" value="${fmt(t.exitPrice)!==null?t.exitPrice:''}" oninput="autoFillPnl('${t.id}')"></div>
+      <div class="defield"><label>Actual P&amp;L ($) — auto-filled from exit price, editable</label><input type="number" id="e-actualPnl-${t.id}" value="${fmt(t.actualPnl)!==null?t.actualPnl:''}"></div>
+      <div class="defield" style="grid-column:1 / -1;"><label>Exit reason</label>
+        <select id="e-exitReason-${t.id}">
+          <option value="">— Select —</option>
+          ${exitReasons.map(r=>`<option value="${r}" ${t.exitReason===r?'selected':''}>${r}</option>`).join('')}
+        </select>
+      </div>
+    </div>
+    <div class="defield" style="margin-top:10px;"><label>Followed exit plan?</label>
+      <div class="pf-toggle">
+        <div class="opt ${followYes?'active-yes':''}" id="pf-yes-${t.id}" onclick="setPostFollow('${t.id}', true)">Yes</div>
+        <div class="opt ${followNo?'active-no':''}" id="pf-no-${t.id}" onclick="setPostFollow('${t.id}', false)">No</div>
+      </div>
+    </div>
+    <div class="defield" style="margin-top:10px;"><label>Post-trade notes</label>
+      <textarea id="e-postNotes-${t.id}" placeholder="What actually happened, what you'd repeat or change">${t.postTradeNotes ? escapeHtml(t.postTradeNotes) : ''}</textarea>
+    </div>
+    <div style="display:flex; gap:8px; margin-top:12px;">
+      <button class="dedit-btn save" onclick="savePostEdit('${t.id}')">Save outcome</button>
+      <button class="dedit-btn cancel" onclick="cancelPostEdit('${t.id}')">Cancel</button>
+    </div>
+  ` : `
+    <div class="drow"><span class="dk">Outcome</span><span class="dv">${outcomeLabel}</span></div>
+    ${t.exitPrice!==null ? `<div class="drow"><span class="dk">Exit price</span><span class="dv">${px(t.exitPrice)}</span></div>` : ''}
+    ${t.exitReason ? `<div class="drow"><span class="dk">Exit reason</span><span class="dv">${escapeHtml(t.exitReason)}</span></div>` : ''}
+    ${t.followedExitPlan !== null ? `<div class="drow"><span class="dk">Followed exit plan</span><span class="dv">${t.followedExitPlan ? 'Yes' : 'No'}</span></div>` : ''}
+    ${t.actualPnl!==null ? `<div class="drow"><span class="dk">Actual P&amp;L</span><span class="dv">${money(t.actualPnl)}</span></div>` : ''}
+    ${(t.rAchieved!==null && fmt(t.rAchieved)!==null) ? `<div class="drow"><span class="dk">R achieved</span><span class="dv">${t.rAchieved.toFixed(2)}R</span></div>` : ''}
+    ${reasonBlock('Post-trade notes', t.postTradeNotes)}
+    <button class="dedit-btn edit" onclick="startPostEdit('${t.id}')">${hasPostData ? 'Edit post-trade details' : 'Add post-trade details'}</button>
+  `;
+
+  return `
+    <div class="drow"><span class="dk">Logged</span><span class="dv">${dateStr}</span></div>
+    ${t.loggedAfterFact ? '<div class="drow"><span class="dk">Entry type</span><span class="dv">Logged after the fact (already taken)</span></div>' : ''}
+    <div class="drow"><span class="dk">Rule adherence</span><span class="dv">${t.rule === 'system' ? 'Following system' : 'Deviation / impulse'}</span></div>
+    ${riskSizeBlock}
+    <div class="dsection" style="margin-top:14px; border-top:1px solid var(--hair); padding-top:12px;">
+      <span class="dk" style="text-transform:uppercase; letter-spacing:1px; font-size:10.5px;">Post-Trade</span>
+    </div>
+    ${postTradeBlock}
+    ${reasonBlock('1. Primary trigger', r.r1)}
+    ${reasonBlock('2. Confirmation', r.r2)}
+    ${reasonBlock('3. Invalidation', r.r3)}
+    ${reasonBlock('4. Context / notes', r.r4)}
+    <div style="margin-top:16px; padding-top:12px; border-top:1px solid var(--hair);">
+      ${confirmDeleteIds.has(t.id) ? `
+        <div class="sans" style="font-size:13px; color:var(--paper); margin-bottom:8px;">Delete this trade permanently? This can't be undone.</div>
+        <div style="display:flex; gap:8px;">
+          <button class="dedit-btn" style="background:var(--red); border:none; color:#2A1006;" onclick="event.stopPropagation(); confirmDeleteTrade('${t.id}')">Yes, delete</button>
+          <button class="dedit-btn cancel" onclick="event.stopPropagation(); cancelDeleteTrade('${t.id}')">Cancel</button>
+        </div>
+      ` : `
+        <button class="dedit-btn" style="background:transparent; border:1px solid var(--red-dim); color:var(--red);" onclick="event.stopPropagation(); askDeleteTrade('${t.id}')">Delete this trade</button>
+      `}
+    </div>
+  `;
+}
+
+let editingPostIds = new Set();
+let postFollowChoice = {};
+
+function autoFillPnl(id){
+  const t = logData.find(x => x.id === id);
+  if(!t) return;
+  const exitInput = document.getElementById(`e-exitPrice-${id}`);
+  const pnlInput = document.getElementById(`e-actualPnl-${id}`);
+  if(!exitInput || !pnlInput) return;
+
+  const exitPrice = parseFloat(exitInput.value);
+  if(isNaN(exitPrice) || t.entry === null || t.entry === undefined) return;
+  if(!t.quantity || !t.vpp) return;
+
+  // Infer direction from entry vs stop (stop below entry = long, stop above entry = short).
+  // Falls back to entry vs target if stop isn't available.
+  let isLong = null;
+  if(t.stop !== null && t.stop !== undefined){
+    isLong = t.stop < t.entry;
+  } else if(t.target !== null && t.target !== undefined){
+    isLong = t.target > t.entry;
+  }
+  if(isLong === null) return;
+
+  const priceMove = isLong ? (exitPrice - t.entry) : (t.entry - exitPrice);
+  const pnl = priceMove * t.quantity * t.vpp;
+  pnlInput.value = Math.round(pnl * 100) / 100;
+}
+
+function startPostEdit(id){
+  postFollowChoice[id] = undefined;
+  editingPostIds.add(id);
+  renderLogList();
+}
+
+function cancelPostEdit(id){
+  editingPostIds.delete(id);
+  delete postFollowChoice[id];
+  renderLogList();
+}
+
+function setPostFollow(id, val){
+  postFollowChoice[id] = val;
+  const yesEl = document.getElementById(`pf-yes-${id}`);
+  const noEl = document.getElementById(`pf-no-${id}`);
+  if(yesEl) yesEl.classList.toggle('active-yes', val === true);
+  if(noEl) noEl.classList.toggle('active-no', val === false);
+}
+
+async function savePostEdit(id){
+  const t = logData.find(x=>x.id===id);
+  if(!t) return;
+
+  const getNum = fieldId => {
+    const el = document.getElementById(fieldId);
+    if(!el || el.value === '') return null;
+    const v = parseFloat(el.value);
+    return isNaN(v) ? null : v;
+  };
+
+  t.exitPrice = getNum(`e-exitPrice-${id}`);
+  t.actualPnl = getNum(`e-actualPnl-${id}`);
+  const reasonSel = document.getElementById(`e-exitReason-${id}`);
+  t.exitReason = reasonSel && reasonSel.value ? reasonSel.value : null;
+  t.followedExitPlan = postFollowChoice[id] !== undefined ? postFollowChoice[id] : (t.followedExitPlan ?? null);
+  const notesEl = document.getElementById(`e-postNotes-${id}`);
+  t.postTradeNotes = notesEl && notesEl.value.trim() ? notesEl.value.trim() : null;
+  t.rAchieved = (t.actualPnl !== null && t.dollarRisk) ? (t.actualPnl / t.dollarRisk) : null;
+
+  const outcomeWasUnset = !t.outcome;
+  let inferredOutcome = null;
+  if(t.actualPnl !== null){
+    inferredOutcome = t.actualPnl > 0 ? 'win' : (t.actualPnl < 0 ? 'loss' : 'breakeven');
+  }
+
+  editingPostIds.delete(id);
+  delete postFollowChoice[id];
+
+  if(outcomeWasUnset && inferredOutcome){
+    t.outcome = inferredOutcome;
+    recomputeStreakFromLog();
+    await saveStreak();
+  }
+
+  await saveLog();
+  renderAll();
+}
+
+function startEdit(id){
+  editingIds.add(id);
+  renderLogList();
+}
+
+function cancelEdit(id){
+  editingIds.delete(id);
+  renderLogList();
+}
+
+function askDeleteTrade(id){
+  confirmDeleteIds.add(id);
+  renderLogList();
+}
+
+function cancelDeleteTrade(id){
+  confirmDeleteIds.delete(id);
+  renderLogList();
+}
+
+async function confirmDeleteTrade(id){
+  logData = logData.filter(x => x.id !== id);
+  expandedIds.delete(id);
+  editingIds.delete(id);
+  editingPostIds.delete(id);
+  confirmDeleteIds.delete(id);
+  delete postFollowChoice[id];
+
+  recomputeStreakFromLog();
+
+  await saveLog();
+  await saveStreak();
+  renderAll();
+}
+
+async function saveEdit(id){
+  const t = logData.find(x=>x.id===id);
+  if(!t) return;
+
+  const getNum = fieldId => {
+    const v = parseFloat(document.getElementById(fieldId).value);
+    return isNaN(v) ? null : v;
+  };
+
+  const tsInput = document.getElementById(`e-ts-${id}`).value;
+  if(tsInput){
+    const parsed = new Date(tsInput);
+    if(!isNaN(parsed.getTime())) t.ts = parsed.toISOString();
+  }
+
+  t.instrument = document.getElementById(`e-instrument-${id}`).value.trim();
+  t.account = getNum(`e-account-${id}`);
+  t.riskPct = getNum(`e-riskPct-${id}`);
+  t.vpp = getNum(`e-vpp-${id}`);
+  t.entry = getNum(`e-entry-${id}`);
+  t.stop = getNum(`e-stop-${id}`);
+  t.target = getNum(`e-target-${id}`);
+  t.quantity = getNum(`e-quantity-${id}`);
+
+  // recompute derived figures the same way the calculator does
+  let dollarRisk = null, size = null, rr = null;
+  const stopDist = (t.entry !== null && t.stop !== null) ? Math.abs(t.entry - t.stop) : null;
+  const targetDist = (t.entry !== null && t.target !== null) ? Math.abs(t.target - t.entry) : null;
+
+  if(t.quantity !== null && t.quantity > 0 && stopDist && t.vpp){
+    // Reverse mode: quantity known, back-calculate $ risk and risk %
+    dollarRisk = stopDist * t.vpp * t.quantity;
+    size = t.quantity;
+    if(t.account){
+      t.riskPct = (dollarRisk/t.account)*100;
+    }
+  } else if(t.account !== null && t.riskPct !== null){
+    // Forward mode: risk % known, derive position size
+    dollarRisk = t.account * (t.riskPct/100);
+    if(dollarRisk !== null && stopDist && t.vpp){
+      size = dollarRisk / (stopDist * t.vpp);
+    }
+  }
+  if(stopDist && targetDist){
+    rr = targetDist / stopDist;
+  }
+  t.dollarRisk = dollarRisk;
+  t.size = size;
+  t.rr = rr;
+
+  editingIds.delete(id);
+  await saveLog();
+  renderAll();
+}
+
+function renderOutcomeButtons(id){
+  return `<span style="display:flex;gap:4px;">
+    <button id="win-${id}" style="font-size:10px;padding:3px 6px;border-radius:2px;border:1px solid var(--green);background:transparent;color:#B9E0C4;cursor:pointer;">W</button>
+    <button id="loss-${id}" style="font-size:10px;padding:3px 6px;border-radius:2px;border:1px solid var(--red);background:transparent;color:#F0C3B6;cursor:pointer;">L</button>
+  </span>`;
+}
+
+function escapeHtml(str){
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+function recomputeStreakFromLog(){
+  const sorted = logData.slice().sort((a,b) => new Date(a.ts) - new Date(b.ts));
+  let streak = 0;
+  for(let i = sorted.length - 1; i >= 0; i--){
+    const o = sorted[i].outcome;
+    if(o === 'loss'){ streak++; }
+    else if(o === 'win' || o === 'breakeven'){ break; }
+    // pending/null outcomes are skipped without breaking the streak count
+  }
+  streakState.consecutiveLosses = streak;
+}
+
+async function recordOutcome(id, outcome){
+  const entry = logData.find(t=>t.id===id);
+  if(!entry) return;
+  entry.outcome = outcome;
+
+  recomputeStreakFromLog();
+
+  await saveLog();
+  await saveStreak();
+  renderAll();
+}
+
+function buildEntryFromForm(rule, loggedAfterFact){
+  const calcResult = calc();
+  return {
+    id: 'trade_' + Date.now(),
+    ts: new Date().toISOString(),
+    instrument: calcResult.instrument,
+    account: calcResult.account,
+    riskPct: calcResult.riskPct,
+    vpp: calcResult.vpp,
+    quantity: calcResult.quantity,
+    entry: calcResult.entry,
+    stop: calcResult.stop,
+    target: calcResult.target,
+    dollarRisk: calcResult.dollarRisk,
+    size: calcResult.size,
+    rr: calcResult.rr,
+    rule: rule,
+    loggedAfterFact: !!loggedAfterFact,
+    reasoning: {
+      r1: document.getElementById('r1').value,
+      r2: document.getElementById('r2').value,
+      r3: document.getElementById('r3').value,
+      r4: document.getElementById('r4').value,
+    },
+    outcome: null,
+    exitPrice: null,
+    exitReason: null,
+    followedExitPlan: null,
+    actualPnl: null,
+    rAchieved: null,
+    postTradeNotes: null
+  };
+}
+
+function resetTicketForm(){
+  mindsetChoice = null;
+  clearMindsetChosenStyles();
+  document.getElementById('mindsetReminder').style.display = 'none';
+  document.getElementById('instrument').value='';
+  document.getElementById('account').value='';
+  document.getElementById('riskPct').value='';
+  document.getElementById('valuePerPoint').value='';
+  document.getElementById('entry').value='';
+  document.getElementById('stop').value='';
+  document.getElementById('target').value='';
+  document.getElementById('quantity').value='';
+  document.getElementById('r1').value='';
+  document.getElementById('r2').value='';
+  document.getElementById('r3').value='';
+  document.getElementById('r4').value='';
+  ruleChoice = null;
+  document.getElementById('opt-system').classList.remove('active-system');
+  document.getElementById('opt-deviation').classList.remove('active-deviation');
+  calc();
+}
+
+document.getElementById('logBtn').addEventListener('click', async ()=>{
+  const entry = buildEntryFromForm(ruleChoice, false);
+  logData.push(entry);
+  await saveLog();
+  resetTicketForm();
+  renderAll();
+});
+
+function renderAll(){
+  checkHolidayAlert();
+  renderMindsetGate();
+  calc();
+  updateExecuteButton();
+  renderStats();
+  renderLogList();
+}
+
+function periodStart(period){
+  const now = new Date();
+  if(period === 'today'){
+    return new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  }
+  if(period === 'week'){
+    const d = new Date(now);
+    const day = d.getDay(); // 0=Sun
+    const diff = (day === 0 ? 6 : day - 1); // week starts Monday
+    d.setDate(d.getDate() - diff);
+    d.setHours(0,0,0,0);
+    return d;
+  }
+  if(period === 'month'){
+    return new Date(now.getFullYear(), now.getMonth(), 1);
+  }
+  return null; // all time
+}
+
+function avg(arr){
+  const nums = arr.filter(v => typeof v === 'number' && !isNaN(v));
+  if(!nums.length) return null;
+  return nums.reduce((a,b)=>a+b,0) / nums.length;
+}
+
+function pct(part, whole){
+  if(!whole) return null;
+  return (part/whole)*100;
+}
+
+function fmtPct(v){ return v===null ? '—' : v.toFixed(0)+'%'; }
+function fmtNum(v, suffix){ return v===null ? '—' : v.toFixed(2)+(suffix||''); }
+function fmtMoney(v){ return v===null ? '—' : (v<0?'-$':'$')+Math.abs(v).toFixed(2); }
+
+function getFilteredSet(period, customStart, customEnd){
+  let start = null, end = null;
+  if(period === 'custom'){
+    start = customStart || null;
+    end = customEnd || null;
+  } else {
+    start = periodStart(period);
+  }
+  return logData.filter(t => {
+    const ts = new Date(t.ts);
+    if(start && ts < start) return false;
+    if(end && ts > end) return false;
+    return true;
+  });
+}
+
+function buildSummary(period, customStart, customEnd){
+  const set = getFilteredSet(period, customStart, customEnd);
+
+  const total = set.length;
+  const closed = set.filter(t => t.outcome);
+  const wins = closed.filter(t => t.outcome === 'win').length;
+  const losses = closed.filter(t => t.outcome === 'loss').length;
+  const breakeven = closed.filter(t => t.outcome === 'breakeven').length;
+  const winRate = pct(wins, closed.length);
+
+  const onSystem = set.filter(t => t.rule === 'system');
+  const deviation = set.filter(t => t.rule === 'deviation');
+  const onSystemPct = pct(onSystem.length, total);
+  const afterFactCount = set.filter(t => t.loggedAfterFact).length;
+  const afterFactPct = pct(afterFactCount, total);
+
+  const avgPlannedRR = avg(set.map(t => t.rr));
+  const withPnl = set.filter(t => typeof t.rAchieved === 'number' && !isNaN(t.rAchieved));
+  const avgRAchieved = avg(withPnl.map(t => t.rAchieved));
+  const totalPnl = set.reduce((sum,t) => sum + (typeof t.actualPnl === 'number' && !isNaN(t.actualPnl) ? t.actualPnl : 0), 0);
+  const anyPnl = set.some(t => typeof t.actualPnl === 'number' && !isNaN(t.actualPnl));
+  const avgDollarRisk = avg(set.map(t => t.dollarRisk));
+
+  const exitPlanTagged = set.filter(t => t.followedExitPlan !== null && t.followedExitPlan !== undefined);
+  const followedExitPct = pct(exitPlanTagged.filter(t => t.followedExitPlan).length, exitPlanTagged.length);
+
+  const exitReasonCounts = {};
+  set.forEach(t => { if(t.exitReason) exitReasonCounts[t.exitReason] = (exitReasonCounts[t.exitReason]||0) + 1; });
+  let topExitReason = null, topExitReasonCount = 0;
+  Object.entries(exitReasonCounts).forEach(([k,v]) => { if(v > topExitReasonCount){ topExitReason = k; topExitReasonCount = v; } });
+
+  // system vs deviation comparison
+  const groupStats = (group) => {
+    const gClosed = group.filter(t => t.outcome);
+    const gWins = gClosed.filter(t => t.outcome === 'win').length;
+    return {
+      count: group.length,
+      winRate: pct(gWins, gClosed.length),
+      avgRAchieved: avg(group.filter(t => typeof t.rAchieved === 'number' && !isNaN(t.rAchieved)).map(t => t.rAchieved)),
+      avgPlannedRR: avg(group.map(t => t.rr))
+    };
+  };
+  const sysStats = groupStats(onSystem);
+  const devStats = groupStats(deviation);
+
+  const instrumentGroups = {};
+  set.forEach(t => {
+    const key = t.instrument ? t.instrument.trim().toUpperCase() : null;
+    if(!key) return;
+    if(!instrumentGroups[key]) instrumentGroups[key] = [];
+    instrumentGroups[key].push(t);
+  });
+  const byInstrument = Object.entries(instrumentGroups).map(([name, group]) => {
+    const gClosed = group.filter(t => t.outcome);
+    const gWins = gClosed.filter(t => t.outcome === 'win').length;
+    const totalPnlForInstrument = group.reduce((sum,t) => sum + (typeof t.actualPnl === 'number' && !isNaN(t.actualPnl) ? t.actualPnl : 0), 0);
+    const hasPnl = group.some(t => typeof t.actualPnl === 'number' && !isNaN(t.actualPnl));
+    return {
+      name,
+      count: group.length,
+      winRate: pct(gWins, gClosed.length),
+      onSystemPct: pct(group.filter(t => t.rule === 'system').length, group.length),
+      avgRAchieved: avg(group.filter(t => typeof t.rAchieved === 'number' && !isNaN(t.rAchieved)).map(t => t.rAchieved)),
+      totalPnl: hasPnl ? totalPnlForInstrument : null
+    };
+  }).sort((a,b) => b.count - a.count);
+
+  const TIME_SLOTS = [
+    { label:'Before 11:00 AM', min:0, max:659 },
+    { label:'11:00 AM – 2:30 PM', min:660, max:870 },
+    { label:'2:31 – 6:30 PM', min:871, max:1110 },
+    { label:'6:31 – 11:00 PM', min:1111, max:1380 },
+    { label:'After 11:00 PM', min:1381, max:1439 }
+  ];
+  function slotFor(date){
+    const mins = date.getHours()*60 + date.getMinutes();
+    return TIME_SLOTS.find(s => mins >= s.min && mins <= s.max) || TIME_SLOTS[TIME_SLOTS.length-1];
+  }
+  const timeSlots = TIME_SLOTS.map(slotDef => {
+    const group = set.filter(t => slotFor(new Date(t.ts)).label === slotDef.label);
+    const gClosed = group.filter(t => t.outcome);
+    const gWins = gClosed.filter(t => t.outcome === 'win').length;
+    return {
+      label: slotDef.label,
+      count: group.length,
+      winRate: pct(gWins, gClosed.length),
+      onSystemPct: pct(group.filter(t => t.rule === 'system').length, group.length),
+      avgRAchieved: avg(group.filter(t => typeof t.rAchieved === 'number' && !isNaN(t.rAchieved)).map(t => t.rAchieved))
+    };
+  }).filter(s => s.count > 0);
+
+  // insights (rule-based, derived only from what's actually in the data)
+  const insights = [];
+  const MIN_SAMPLE = 3;
+
+  if(total === 0){
+    insights.push({ type:'neutral', text:'No trades logged yet for this period — log a few tickets to start building your track record.' });
+  } else {
+    if(sysStats.count >= MIN_SAMPLE && devStats.count >= MIN_SAMPLE && sysStats.winRate !== null && devStats.winRate !== null){
+      const gap = sysStats.winRate - devStats.winRate;
+      if(gap >= 10){
+        insights.push({ type:'warn', text:`Trades that followed your system win ${gap.toFixed(0)} percentage points more often than deviations (${sysStats.winRate.toFixed(0)}% vs ${devStats.winRate.toFixed(0)}%). Impulse entries are measurably costing you.` });
+      } else if(gap <= -10){
+        insights.push({ type:'neutral', text:`Deviation trades are currently outperforming your system trades in win rate. Worth reviewing whether your written rules need updating, or whether this is a small sample.` });
+      } else {
+        insights.push({ type:'good', text:'System and deviation trades are performing similarly so far — not yet a clear signal either way.' });
+      }
+    }
+
+    if(onSystemPct !== null && onSystemPct < 60 && total >= MIN_SAMPLE){
+      insights.push({ type:'warn', text:`Only ${onSystemPct.toFixed(0)}% of your logged trades followed your system. The mindset check-in is meant to keep this closer to 100%.` });
+    } else if(onSystemPct !== null && onSystemPct >= 90 && total >= MIN_SAMPLE){
+      insights.push({ type:'good', text:`${onSystemPct.toFixed(0)}% of your trades are on-system — strong rule adherence.` });
+    }
+
+    if(afterFactPct !== null && afterFactCount >= MIN_SAMPLE){
+      insights.push({ type:'warn', text:`${afterFactCount} ${pluralize(afterFactCount,'trade')} (${afterFactPct.toFixed(0)}%) ${pluralize(afterFactCount,'was','were')} logged after already being taken impulsively. Logging them is good for honesty, but the goal is catching the impulse before you click, not after.` });
+    } else if(afterFactCount > 0 && afterFactCount < MIN_SAMPLE){
+      insights.push({ type:'neutral', text:`${afterFactCount} ${pluralize(afterFactCount,'trade')} so far ${pluralize(afterFactCount,'was','were')} logged after already being taken impulsively — worth watching if this becomes a pattern.` });
+    }
+
+    if(avgPlannedRR !== null && avgRAchieved !== null && withPnl.length >= MIN_SAMPLE){
+      const gapR = avgPlannedRR - avgRAchieved;
+      if(gapR >= 0.5){
+        insights.push({ type:'warn', text:`You plan for ${avgPlannedRR.toFixed(2)}R on average but are only realizing ${avgRAchieved.toFixed(2)}R. Check whether you're exiting winners early or targets are unrealistic.` });
+      } else if(avgRAchieved > avgPlannedRR){
+        insights.push({ type:'good', text:`You're realizing more R (${avgRAchieved.toFixed(2)}R) than you plan for on average (${avgPlannedRR.toFixed(2)}R) — your exits are adding value beyond the initial plan.` });
+      }
+    }
+
+    if(followedExitPct !== null && exitPlanTagged.length >= MIN_SAMPLE){
+      if(followedExitPct < 70){
+        insights.push({ type:'warn', text:`You only followed your exit plan on ${followedExitPct.toFixed(0)}% of tagged trades. Exit discipline looks like your highest-leverage fix.` });
+      } else {
+        insights.push({ type:'good', text:`You followed your exit plan on ${followedExitPct.toFixed(0)}% of tagged trades — solid exit discipline.` });
+      }
+    }
+
+    if(streakState.consecutiveLosses >= LOSS_TRIGGER){
+      insights.push({ type:'warn', text:`You're currently on a ${streakState.consecutiveLosses}-loss streak — worth pausing to check whether you're trading your plan or trying to win it back.` });
+    }
+
+    const slotsWithSample = timeSlots.filter(s => s.count >= MIN_SAMPLE && s.winRate !== null);
+    if(slotsWithSample.length >= 2){
+      const best = slotsWithSample.reduce((a,b) => (b.winRate > a.winRate ? b : a));
+      const worst = slotsWithSample.reduce((a,b) => (b.winRate < a.winRate ? b : a));
+      if(best.label !== worst.label && (best.winRate - worst.winRate) >= 15){
+        insights.push({ type:'neutral', text:`Your win rate is notably stronger in the "${best.label}" window (${best.winRate.toFixed(0)}%) than "${worst.label}" (${worst.winRate.toFixed(0)}%). Worth watching whether certain hours suit your setup better.` });
+      }
+    }
+
+    if(insights.length === 0){
+      insights.push({ type:'neutral', text:'Log a few more trades with outcomes and exit details to unlock behavioral insights here.' });
+    }
+  }
+
+  return {
+    total, wins, losses, breakeven, winRate, onSystemPct, avgPlannedRR, avgRAchieved,
+    totalPnl, anyPnl, avgDollarRisk, followedExitPct, topExitReason, topExitReasonCount,
+    afterFactCount, afterFactPct, sysStats, devStats, byInstrument, timeSlots, insights
+  };
+}
+
+function renderSummary(){
+  const period = document.getElementById('summaryPeriod').value;
+  let customStart = null, customEnd = null;
+  if(period === 'custom'){
+    const startVal = document.getElementById('summaryStart').value;
+    const endVal = document.getElementById('summaryEnd').value;
+    if(startVal) customStart = new Date(startVal + 'T00:00:00');
+    if(endVal) customEnd = new Date(endVal + 'T23:59:59');
+  }
+  const s = buildSummary(period, customStart, customEnd);
+  const el = document.getElementById('summaryContent');
+  el.style.display = 'block';
+
+  const statGrid = `
+    <div class="sum-grid">
+      <div class="sum-stat"><div class="num-big">${s.total}</div><div class="lbl">Trades logged</div></div>
+      <div class="sum-stat"><div class="num-big">${fmtPct(s.winRate)}</div><div class="lbl">Win rate</div></div>
+      <div class="sum-stat"><div class="num-big">${fmtPct(s.onSystemPct)}</div><div class="lbl">On-system</div></div>
+      <div class="sum-stat"><div class="num-big">${fmtNum(s.avgPlannedRR)}</div><div class="lbl">Avg planned R:R</div></div>
+      <div class="sum-stat"><div class="num-big">${fmtNum(s.avgRAchieved,'R')}</div><div class="lbl">Avg R achieved</div></div>
+      <div class="sum-stat"><div class="num-big">${s.anyPnl ? fmtMoney(s.totalPnl) : '—'}</div><div class="lbl">Total P&amp;L</div></div>
+      <div class="sum-stat"><div class="num-big">${s.afterFactCount}</div><div class="lbl">Logged after the fact</div></div>
+    </div>`;
+
+  const compareTable = (s.sysStats.count || s.devStats.count) ? `
+    <div class="sum-section-title">System vs. Deviation</div>
+    <table class="sum-compare">
+      <tr><th></th><th>System</th><th>Deviation</th></tr>
+      <tr><td>Trades</td><td>${s.sysStats.count}</td><td>${s.devStats.count}</td></tr>
+      <tr><td>Win rate</td><td>${fmtPct(s.sysStats.winRate)}</td><td>${fmtPct(s.devStats.winRate)}</td></tr>
+      <tr><td>Avg R achieved</td><td>${fmtNum(s.sysStats.avgRAchieved,'R')}</td><td>${fmtNum(s.devStats.avgRAchieved,'R')}</td></tr>
+    </table>` : '';
+
+  const exitDiscipline = (s.followedExitPct !== null || s.topExitReason) ? `
+    <div class="sum-section-title">Exit Discipline</div>
+    <table class="sum-compare" style="margin-bottom:18px;">
+      ${s.followedExitPct !== null ? `<tr><td>Followed exit plan</td><td colspan="2">${fmtPct(s.followedExitPct)}</td></tr>` : ''}
+      ${s.topExitReason ? `<tr><td>Most common exit</td><td colspan="2">${escapeHtml(s.topExitReason)} (${s.topExitReasonCount})</td></tr>` : ''}
+    </table>` : '';
+
+  const timeSlotTable = s.timeSlots.length ? `
+    <div class="sum-section-title">By Time of Day</div>
+    <table class="sum-compare" style="margin-bottom:18px;">
+      <tr><th>Window</th><th>Trades</th><th>Win Rate</th><th>On-System</th><th>Avg R</th></tr>
+      ${s.timeSlots.map(slot => `<tr><td>${escapeHtml(slot.label)}</td><td>${slot.count}</td><td>${fmtPct(slot.winRate)}</td><td>${fmtPct(slot.onSystemPct)}</td><td>${fmtNum(slot.avgRAchieved,'R')}</td></tr>`).join('')}
+    </table>` : '';
+
+  const instrumentTable = s.byInstrument.length ? `
+    <div class="sum-section-title">By Script</div>
+    <table class="sum-compare" style="margin-bottom:18px;">
+      <tr><th>Script</th><th>Trades</th><th>Win Rate</th><th>On-System</th><th>Avg R</th><th>P&amp;L</th></tr>
+      ${s.byInstrument.map(inst => `<tr><td>${escapeHtml(inst.name)}</td><td>${inst.count}</td><td>${fmtPct(inst.winRate)}</td><td>${fmtPct(inst.onSystemPct)}</td><td>${fmtNum(inst.avgRAchieved,'R')}</td><td>${inst.totalPnl!==null ? fmtMoney(inst.totalPnl) : '—'}</td></tr>`).join('')}
+    </table>` : '';
+
+  const insightsList = `
+    <div class="sum-section-title">What to Work On</div>
+    <ul class="insight-list">
+      ${s.insights.map(i => `<li class="${i.type==='warn'?'warn':i.type==='good'?'good':''}">${i.type==='warn'?'⚠':i.type==='good'?'✓':'·'}&nbsp;&nbsp;${escapeHtml(i.text)}</li>`).join('')}
+    </ul>`;
+
+  el.innerHTML = statGrid + compareTable + exitDiscipline + timeSlotTable + instrumentTable + insightsList;
+}
+
+document.getElementById('genSummaryBtn').addEventListener('click', renderSummary);
+document.getElementById('summaryPeriod').addEventListener('change', () => {
+  const isCustom = document.getElementById('summaryPeriod').value === 'custom';
+  document.getElementById('customRangeFields').style.display = isCustom ? 'grid' : 'none';
+  if(document.getElementById('summaryContent').style.display === 'block' && !isCustom) renderSummary();
+});
+['summaryStart','summaryEnd'].forEach(id=>{
+  document.getElementById(id).addEventListener('change', () => {
+    if(document.getElementById('summaryContent').style.display === 'block') renderSummary();
+  });
+});
+
+function setSyncStatus(state, text){
+  const badge = document.getElementById('syncStatusBadge');
+  badge.className = 'sync-status' + (state==='connected' ? ' connected' : '');
+  badge.textContent = text;
+}
+
+function updateSyncMeta(text){
+  document.getElementById('syncMeta').textContent = text;
+}
+
+document.getElementById('syncHeader').addEventListener('click', () => {
+  const body = document.getElementById('syncBody');
+  body.style.display = body.style.display === 'none' ? 'block' : 'none';
+});
+
+function csvEscape(val){
+  if(val === null || val === undefined) return '';
+  const str = String(val);
+  if(/[",\n]/.test(str)){
+    return '"' + str.replace(/"/g, '""') + '"';
+  }
+  return str;
+}
+
+function fmtCsvNum(v){
+  if(v === null || v === undefined || v === '') return '';
+  const n = Number(v);
+  if(!Number.isFinite(n)) return '';
+  const rounded = Number(n.toFixed(2));
+  return Object.is(rounded, -0) ? '0' : String(rounded);
+}
+
+function exportTradeHistoryCsv(){
+  const period = document.getElementById('summaryPeriod').value;
+  let customStart = null, customEnd = null;
+  if(period === 'custom'){
+    const startVal = document.getElementById('summaryStart').value;
+    const endVal = document.getElementById('summaryEnd').value;
+    if(startVal) customStart = new Date(startVal + 'T00:00:00');
+    if(endVal) customEnd = new Date(endVal + 'T23:59:59');
+  }
+  const set = getFilteredSet(period, customStart, customEnd).slice().sort((a,b) => new Date(a.ts) - new Date(b.ts));
+
+  const headers = [
+    'Date','Time','Script','Rule Adherence','Quantity',
+    'Entry Price','Stop Loss','Target Price','Exit Price',
+    'Planned R:R','R Achieved','Account Size','Risk %','$ At Risk',
+    'Outcome','Actual P&L','Exit Reason','Followed Exit Plan',
+    'Primary Trigger','Confirmation','Invalidation','Context Notes','Post-Trade Notes',
+    'Logged After Fact'
+  ];
+
+  const rows = set.map(t => {
+    const d = new Date(t.ts);
+    const r = t.reasoning || {};
+    return [
+      d.toLocaleDateString(),
+      d.toLocaleTimeString(),
+      t.instrument || '',
+      t.rule === 'system' ? 'Following System' : 'Deviation',
+      fmtCsvNum(t.quantity),
+      fmtCsvNum(t.entry),
+      fmtCsvNum(t.stop),
+      fmtCsvNum(t.target),
+      fmtCsvNum(t.exitPrice),
+      fmtCsvNum(t.rr),
+      fmtCsvNum(t.rAchieved),
+      fmtCsvNum(t.account),
+      fmtCsvNum(t.riskPct),
+      fmtCsvNum(t.dollarRisk),
+      t.outcome ? t.outcome.charAt(0).toUpperCase() + t.outcome.slice(1) : 'Open',
+      fmtCsvNum(t.actualPnl),
+      t.exitReason || '',
+      t.followedExitPlan === true ? 'Yes' : (t.followedExitPlan === false ? 'No' : ''),
+      r.r1 || '', r.r2 || '', r.r3 || '', r.r4 || '',
+      t.postTradeNotes || '',
+      t.loggedAfterFact ? 'Yes' : 'No'
+    ];
+  });
+
+  const csvLines = [headers, ...rows].map(row => row.map(csvEscape).join(',')).join('\r\n');
+  const blob = new Blob([csvLines], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const stamp = new Date().toISOString().slice(0,10);
+  a.href = url;
+  a.download = `execution-flow-trade-history-${period}-${stamp}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+document.getElementById('exportCsvBtn').addEventListener('click', exportTradeHistoryCsv);
+
+async function exportData(){
+  const payload = {
+    format: 'execution-flow-backup',
+    version: 2,
+    logData,
+    streakState,
+    biasStore: loadBiasStore(),
+    lastBiasScript: localStorage.getItem(LAST_BIAS_SCRIPT_KEY) || '',
+    lastBiasTimeframe: localStorage.getItem(LAST_BIAS_TF_KEY) || currentBiasTimeframe,
+    exportedAt: new Date().toISOString()
+  };
+  const json = JSON.stringify(payload, null, 2);
+  const blob = new Blob([json], { type: 'application/json' });
+  const stamp = new Date().toISOString().slice(0,10);
+  const fileName = `execution-flow-backup-${stamp}.json`;
+
+  // On browsers that support the File System Access API, reuse the same
+  // chosen backup file so a later export can update/replace it directly.
+  if(window.showSaveFilePicker){
+    try{
+      if(!exportFileHandle){
+        exportFileHandle = await window.showSaveFilePicker({
+          suggestedName: fileName,
+          types: [{ description:'Execution Flow backup', accept:{'application/json':['.json']} }]
+        });
+      }
+      const writable = await exportFileHandle.createWritable();
+      await writable.write(blob);
+      await writable.close();
+      try{ localStorage.setItem(EXPORT_STATE_KEY, getExportSignature()); }catch(e){}
+      setSyncStatus('connected', 'Exported');
+      updateSyncMeta('Backup updated with ' + logData.length + ' trade' + (logData.length===1?'':'s') + ', saved bias notes, and preferences at ' + new Date().toLocaleString() + '.');
+      return;
+    }catch(err){
+      if(err && err.name === 'AbortError') return;
+      exportFileHandle = null;
+      console.warn('Direct backup update unavailable; using browser download instead.', err);
+    }
+  }
+
+  // iPhone/Safari and other browsers without file-system access use a normal download.
+  // The app keeps the same backup naming pattern; browser security prevents silent
+  // replacement of an existing downloaded file.
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = fileName;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  try{ localStorage.setItem(EXPORT_STATE_KEY, getExportSignature()); }catch(e){}
+  setSyncStatus('connected', 'Exported');
+  updateSyncMeta('Exported ' + logData.length + ' trade' + (logData.length===1?'':'s') + '. Keep this latest backup file; your browser may rename newer downloads instead of replacing the old one.');
+}
+
+function importData(file){
+  const reader = new FileReader();
+  reader.onload = async (e) => {
+    let parsed;
+    try{
+      parsed = JSON.parse(e.target.result);
+    }catch(err){
+      setSyncStatus('disconnected', 'Import failed');
+      updateSyncMeta('That file isn\'t valid JSON from this app.');
+      return;
+    }
+    if(!parsed || !Array.isArray(parsed.logData)){
+      setSyncStatus('disconnected', 'Import failed');
+      updateSyncMeta('That file doesn\'t look like an Execution Flow backup.');
+      return;
+    }
+
+    const incomingCount = parsed.logData.length;
+    const incomingWhen = parsed.exportedAt ? new Date(parsed.exportedAt).toLocaleString() : 'unknown time';
+    const currentCount = logData.length;
+
+    let proceed = true;
+    let mode = 'replace';
+    if(currentCount > 0){
+      const merge = confirm(
+        `This device already has ${currentCount} logged ${pluralize(currentCount,'trade')}.\n\n` +
+        `The file you're importing has ${incomingCount} ${pluralize(incomingCount,'trade')}, exported ${incomingWhen}.\n\n` +
+        `OK = merge (keep both, skip exact duplicates by id)\nCancel = replace (this device's data will be overwritten by the file)`
+      );
+      mode = merge ? 'merge' : 'replace';
+    }
+
+    if(mode === 'merge'){
+      const existingIds = new Set(logData.map(t => t.id));
+      const toAdd = parsed.logData.filter(t => !existingIds.has(t.id));
+      logData = logData.concat(toAdd);
+      recomputeStreakFromLog();
+      updateSyncMeta(`Merged — added ${toAdd.length} new ${pluralize(toAdd.length,'trade')}, skipped ${incomingCount - toAdd.length} ${pluralize(incomingCount - toAdd.length,'duplicate')}.`);
+    } else {
+      logData = parsed.logData;
+      recomputeStreakFromLog();
+      updateSyncMeta(`Replaced local data with ${incomingCount} ${pluralize(incomingCount,'trade')} from the imported file.`);
+    }
+
+    await saveLog();
+    await saveStreak();
+    try{ localStorage.setItem(EXPORT_STATE_KEY, getExportSignature()); }catch(e){}
+
+    // Restore bias notes and bias preferences when present (V2 backups).
+    if(parsed.biasStore && typeof parsed.biasStore === 'object' && !Array.isArray(parsed.biasStore)){
+      saveBiasStore(parsed.biasStore);
+    }
+    if(typeof parsed.lastBiasScript === 'string'){
+      try{ localStorage.setItem(LAST_BIAS_SCRIPT_KEY, parsed.lastBiasScript); }catch(e){}
+    }
+    if(typeof parsed.lastBiasTimeframe === 'string' && BIAS_TIMEFRAME_DEFS[parsed.lastBiasTimeframe]){
+      try{ localStorage.setItem(LAST_BIAS_TF_KEY, parsed.lastBiasTimeframe); }catch(e){}
+    }
+    loadDailyBias();
+
+    setSyncStatus('connected', 'Imported');
+    renderAll();
+  };
+  reader.readAsText(file);
+}
+
+document.getElementById('exportBtn').addEventListener('click', exportData);
+document.getElementById('importBtn').addEventListener('click', () => {
+  document.getElementById('importFileInput').click();
+});
+document.getElementById('importFileInput').addEventListener('change', (e) => {
+  const file = e.target.files[0];
+  if(file) importData(file);
+  e.target.value = '';
+});
+
+function nthWeekdayOfMonth(year, month, weekday, n){
+  const first = new Date(year, month, 1);
+  const firstWeekday = first.getDay();
+  const day = 1 + ((7 + weekday - firstWeekday) % 7) + (n - 1) * 7;
+  return new Date(year, month, day);
+}
+
+function lastWeekdayOfMonth(year, month, weekday){
+  const last = new Date(year, month + 1, 0);
+  const lastWeekdayNum = last.getDay();
+  const day = last.getDate() - ((7 + lastWeekdayNum - weekday) % 7);
+  return new Date(year, month, day);
+}
+
+function observedHolidayDate(date){
+  const day = date.getDay();
+  const d = new Date(date);
+  if(day === 6){ d.setDate(d.getDate() - 1); return d; }
+  if(day === 0){ d.setDate(d.getDate() + 1); return d; }
+  return d;
+}
+
+function getNYSEHolidays(year){
+  // Full-day NYSE market closures. This is intentionally NOT the U.S.
+  // federal/bank holiday list: the NYSE is open on Columbus Day and Veterans Day,
+  // and it closes for Good Friday. Weekend holidays are observed on the NYSE
+  // schedule according to the exchange holiday convention.
+  const raw = [
+    { name: "New Year's Day", date: new Date(year, 0, 1) },
+    { name: "Martin Luther King Jr. Day", date: nthWeekdayOfMonth(year, 0, 1, 3) },
+    { name: "Washington's Birthday (Presidents' Day)", date: nthWeekdayOfMonth(year, 1, 1, 3) },
+    { name: "Good Friday", date: getGoodFriday(year) },
+    { name: "Memorial Day", date: lastWeekdayOfMonth(year, 4, 1) },
+    { name: "Juneteenth National Independence Day", date: new Date(year, 5, 19) },
+    { name: "Independence Day", date: new Date(year, 6, 4) },
+    { name: "Labor Day", date: nthWeekdayOfMonth(year, 8, 1, 1) },
+    { name: "Thanksgiving Day", date: nthWeekdayOfMonth(year, 10, 4, 4) },
+    { name: "Christmas Day", date: new Date(year, 11, 25) }
+  ];
+  return raw.map(h => ({ name: h.name, date: h.date, observed: observedHolidayDate(h.date) }));
+}
+
+function getGoodFriday(year){
+  // Anonymous Gregorian Easter calculation (valid for Gregorian calendar years).
+  const a = year % 19;
+  const b = Math.floor(year / 100);
+  const c = year % 100;
+  const d = Math.floor(b / 4);
+  const e = b % 4;
+  const f = Math.floor((b + 8) / 25);
+  const g = Math.floor((b - f + 1) / 3);
+  const h = (19*a + b - d - g + 15) % 30;
+  const i = Math.floor(c / 4);
+  const k = c % 4;
+  const l = (32 + 2*e + 2*i - h - k) % 7;
+  const m = Math.floor((a + 11*h + 22*l) / 451);
+  const month = Math.floor((h + l - 7*m + 114) / 31) - 1;
+  const day = ((h + l - 7*m + 114) % 31) + 1;
+  const easter = new Date(year, month, day);
+  easter.setDate(easter.getDate() - 2);
+  return easter;
+}
+
+function getPriorTradingDay(date){
+  const d = new Date(date);
+  const holidayDates = getNYSEHolidays(d.getFullYear())
+    .map(h => h.observed)
+    .concat(getNYSEHolidays(d.getFullYear() - 1).map(h => h.observed))
+    .map(x => `${x.getFullYear()}-${x.getMonth()}-${x.getDate()}`);
+  do {
+    d.setDate(d.getDate() - 1);
+  } while(d.getDay() === 0 || d.getDay() === 6 || holidayDates.includes(`${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`));
+  return d;
+}
+
+function sameCalendarDay(a, b){
+  return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+}
+
+const HOLIDAY_SHOWN_KEY = 'execution-console:holiday-alert-shown-date';
+
+function todayKey(d){
+  return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+}
+
+function mondayOf(d){
+  const date = new Date(d);
+  const day = date.getDay();
+  const diff = (day === 0 ? -6 : 1) - day;
+  date.setDate(date.getDate() + diff);
+  date.setHours(0,0,0,0);
+  return date;
+}
+function weekKey(d){
+  const monday = mondayOf(d);
+  return `${monday.getFullYear()}-${monday.getMonth()}-${monday.getDate()}`;
+}
+function monthKey(d){
+  return `${d.getFullYear()}-${d.getMonth()}`;
+}
+
+const BIAS_TIMEFRAME_DEFS = {
+  monthly: { keyFn: monthKey, label: 'this month', placeholder: 'Big-picture view for this month' },
+  weekly:  { keyFn: weekKey,  label: 'this week',  placeholder: 'What you expect this week, key levels/events' },
+  daily:   { keyFn: todayKey, label: 'today',      placeholder: 'Brief note on your market view for today — e.g. bullish above X, range-bound, avoiding chop before the data release' }
+};
+
+const BIAS_STORE_KEY = 'execution-console:bias-by-script';
+const LAST_BIAS_SCRIPT_KEY = 'execution-console:last-bias-script';
+const LAST_BIAS_TF_KEY = 'execution-console:last-bias-timeframe';
+
+let currentBiasTimeframe = 'monthly';
+
+function loadBiasStore(){
+  try{
+    const raw = localStorage.getItem(BIAS_STORE_KEY);
+    return raw ? JSON.parse(raw) : {};
+  }catch(e){ return {}; }
+}
+
+function saveBiasStore(store){
+  try{ localStorage.setItem(BIAS_STORE_KEY, JSON.stringify(store)); }
+  catch(e){ console.error('save bias store failed', e); }
+}
+
+function currentBiasScript(){
+  const select = document.getElementById('biasScriptSelect');
+  const custom = document.getElementById('biasScriptCustom');
+  if(select.value === '__custom__') return custom.value.trim().toUpperCase();
+  return select.value.trim().toUpperCase();
+}
+
+function populateBiasScriptList(selectedScript = ''){
+  const store = loadBiasStore();
+  const fromBias = Object.keys(store);
+  const fromTrades = [...new Set(logData.map(t => t.instrument ? t.instrument.trim().toUpperCase() : null).filter(Boolean))];
+  const all = [...new Set([...fromBias, ...fromTrades, selectedScript].filter(Boolean))].sort();
+  const select = document.getElementById('biasScriptSelect');
+  const current = selectedScript || currentBiasScript();
+  select.innerHTML = '<option value="">Select a script…</option>' +
+    all.map(s => `<option value="${escapeHtml(s)}">${escapeHtml(s)}</option>`).join('') +
+    '<option value="__custom__">＋ New / type script…</option>';
+  const custom = document.getElementById('biasScriptCustom');
+  if(current && all.includes(current)){
+    select.value = current;
+    custom.value = '';
+    custom.style.display = 'none';
+  }else if(current){
+    select.value = '__custom__';
+    custom.value = current;
+    custom.style.display = 'block';
+  }else{
+    select.value = '';
+    custom.value = '';
+    custom.style.display = 'none';
+  }
+}
+
+function handleBiasScriptChange(){
+  const select = document.getElementById('biasScriptSelect');
+  const custom = document.getElementById('biasScriptCustom');
+  custom.style.display = select.value === '__custom__' ? 'block' : 'none';
+  if(select.value !== '__custom__') custom.value = '';
+  const script = currentBiasScript();
+  try{ localStorage.setItem(LAST_BIAS_SCRIPT_KEY, script); }catch(e){}
+  renderBiasField();
+  if(select.value === '__custom__') setTimeout(() => custom.focus(), 0);
+}
+
+function renderBiasField(){
+  const script = currentBiasScript();
+  const tf = currentBiasTimeframe;
+  const def = BIAS_TIMEFRAME_DEFS[tf];
+  const textarea = document.getElementById('biasText');
+  const meta = document.getElementById('biasMeta');
+  const label = document.getElementById('biasFieldLabel');
+
+  label.textContent = tf.charAt(0).toUpperCase() + tf.slice(1) + ' bias';
+  textarea.placeholder = script ? def.placeholder : 'Enter a script above first';
+
+  if(!script){
+    textarea.value = '';
+    textarea.disabled = true;
+    meta.textContent = '';
+    return;
+  }
+  textarea.disabled = false;
+
+  const store = loadBiasStore();
+  const entry = store[script] || {};
+  const saved = entry[tf];
+  const currentKey = def.keyFn(new Date());
+  if(saved && saved.key === currentKey){
+    textarea.value = saved.text || '';
+    meta.textContent = saved.text ? `Saved for ${script} — ${def.label}` : '';
+  } else {
+    textarea.value = '';
+    meta.textContent = '';
+  }
+}
+
+function saveBiasField(){
+  const script = currentBiasScript();
+  if(!script) return;
+  const tf = currentBiasTimeframe;
+  const def = BIAS_TIMEFRAME_DEFS[tf];
+  const textarea = document.getElementById('biasText');
+  const meta = document.getElementById('biasMeta');
+  const currentKey = def.keyFn(new Date());
+
+  const store = loadBiasStore();
+  if(!store[script]) store[script] = {};
+  store[script][tf] = { key: currentKey, text: textarea.value };
+  saveBiasStore(store);
+  meta.textContent = textarea.value.trim() ? `Saved for ${script} — ${def.label}` : '';
+}
+
+function setBiasTimeframe(tf){
+  currentBiasTimeframe = tf;
+  try{ localStorage.setItem(LAST_BIAS_TF_KEY, tf); }catch(e){}
+  ['monthly','weekly','daily'].forEach(k => {
+    document.getElementById(`tf-${k}`).classList.toggle('active-tf', k === tf);
+  });
+  renderBiasField();
+}
+
+function loadDailyBias(){
+  const lastScript = (localStorage.getItem(LAST_BIAS_SCRIPT_KEY) || '').trim().toUpperCase();
+  populateBiasScriptList(lastScript);
+
+  const lastTf = localStorage.getItem(LAST_BIAS_TF_KEY);
+  currentBiasTimeframe = (lastTf && BIAS_TIMEFRAME_DEFS[lastTf]) ? lastTf : 'monthly';
+  ['monthly','weekly','daily'].forEach(k => {
+    document.getElementById(`tf-${k}`).classList.toggle('active-tf', k === currentBiasTimeframe);
+  });
+
+  renderBiasField();
+}
+
+document.getElementById('biasScriptSelect').addEventListener('change', handleBiasScriptChange);
+document.getElementById('biasScriptCustom').addEventListener('input', () => {
+  const script = currentBiasScript();
+  try{ localStorage.setItem(LAST_BIAS_SCRIPT_KEY, script); }catch(e){}
+  renderBiasField();
+});
+
+['monthly','weekly','daily'].forEach(tf => {
+  document.getElementById(`tf-${tf}`).addEventListener('click', () => setBiasTimeframe(tf));
+});
+
+document.getElementById('biasText').addEventListener('input', () => {
+  clearTimeout(window._biasTextTimer);
+  window._biasTextTimer = setTimeout(saveBiasField, 500);
+});
+
+function checkHolidayAlert(){
+  const now = new Date();
+  const holidays = getNYSEHolidays(now.getFullYear()).concat(getNYSEHolidays(now.getFullYear() + 1));
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  let match = null;
+  for(const h of holidays){
+    const priorDay = getPriorTradingDay(h.observed);
+    if(sameCalendarDay(priorDay, today)){ match = h; break; }
+  }
+  const bar = document.getElementById('holidayBar');
+  const text = document.getElementById('holidayText');
+
+  if(!match){
+    bar.classList.remove('active');
+    return;
+  }
+
+  const alreadyShown = localStorage.getItem(HOLIDAY_SHOWN_KEY) === todayKey(today);
+  const dateStr = match.observed.toLocaleDateString(undefined, { weekday:'long', month:'long', day:'numeric' });
+  const legalDiffers = match.date.getTime() !== match.observed.getTime();
+  text.textContent = `Heads up — the NYSE is closed for ${match.name} ${legalDiffers ? '(observed) ' : ''}on ${dateStr}. The next NYSE session follows the exchange holiday schedule.`;
+
+  if(alreadyShown){
+    bar.classList.remove('active');
+  } else {
+    bar.classList.add('active');
+    localStorage.setItem(HOLIDAY_SHOWN_KEY, todayKey(today));
+  }
+}
+
+document.getElementById('holidayDismiss').addEventListener('click', () => {
+  const today = new Date();
+  localStorage.setItem(HOLIDAY_SHOWN_KEY, todayKey(new Date(today.getFullYear(), today.getMonth(), today.getDate())));
+  document.getElementById('holidayBar').classList.remove('active');
+});
+
+const BOREDOM_REMINDERS = [
+  "Boredom is part of the process. There's nothing wrong with you for feeling it — the market doesn't owe you action just because you're at the screen. Embrace the boredom. Patience is the job. You're paid for waiting, not for clicking.",
+  "No setup means no trade. Sitting on your hands is a skill, not a failure. You're paid for waiting — the edge shows up on its own schedule, not yours.",
+  "This flat, boring stretch is exactly what discipline looks like from the inside. Let it be boring. The setups that matter will still be there when they show up."
+];
+const FOMO_REMINDERS = [
+  "A move you missed is not a setup — it's a move you missed. Chasing it turns a clean miss into a bad entry. Wait for your own trigger, not the one that already happened.",
+  "FOMO is the market's way of asking you to break your own rules. You don't need this specific move — you need the next one that actually matches your plan.",
+  "The trade already happened without you, and that's fine. Chasing it now doesn't get you back in at a good price — it gets you in late. Let it go and wait for the next real setup."
+];
+
+function pickRandom(arr){ return arr[Math.floor(Math.random() * arr.length)]; }
+function pluralize(n, singular, plural){ return n === 1 ? singular : (plural || singular + 's'); }
+
+function showMindsetReminder(messages, leadText){
+  const el = document.getElementById('mindsetReminder');
+  el.innerHTML = `<span class="lead">${leadText}</span>${pickRandom(messages)}`;
+  el.style.display = 'block';
+}
+
+function clearMindsetChosenStyles(){
+  ['mo-setup','mo-bored','mo-fomo'].forEach(id => {
+    document.getElementById(id).classList.remove('chosen-good','chosen-caution');
+  });
+}
+
+document.getElementById('mo-setup').addEventListener('click', () => {
+  clearMindsetChosenStyles();
+  document.getElementById('mo-setup').classList.add('chosen-good');
+  document.getElementById('mindsetReminder').style.display = 'none';
+  mindsetChoice = 'setup';
+  renderMindsetGate();
+});
+
+document.getElementById('mo-bored').addEventListener('click', () => {
+  clearMindsetChosenStyles();
+  document.getElementById('mo-bored').classList.add('chosen-caution');
+  showMindsetReminder(BOREDOM_REMINDERS, 'Worth remembering');
+  mindsetChoice = 'bored';
+  renderMindsetGate();
+});
+
+document.getElementById('mo-fomo').addEventListener('click', () => {
+  clearMindsetChosenStyles();
+  document.getElementById('mo-fomo').classList.add('chosen-caution');
+  showMindsetReminder(FOMO_REMINDERS, 'Worth remembering');
+  mindsetChoice = 'fomo';
+  renderMindsetGate();
+});
+
+document.getElementById('impulseHeader').addEventListener('click', () => {
+  const body = document.getElementById('impulseBody');
+  const chev = document.getElementById('impulseChev');
+  const opening = body.style.display === 'none';
+  body.style.display = opening ? 'block' : 'none';
+  chev.classList.toggle('expanded', opening);
+  if(opening && !document.getElementById('im-ts').value){
+    document.getElementById('im-ts').value = toDatetimeLocal(new Date().toISOString());
+  }
+});
+
+document.getElementById('logImpulseBtn').addEventListener('click', async () => {
+  const getNum = fieldId => {
+    const v = parseFloat(document.getElementById(fieldId).value);
+    return isNaN(v) ? null : v;
+  };
+
+  const instrument = document.getElementById('im-instrument').value.trim();
+  const tsInput = document.getElementById('im-ts').value;
+  const ts = tsInput ? new Date(tsInput).toISOString() : new Date().toISOString();
+  const entry = getNum('im-entry');
+  const stop = getNum('im-stop');
+  const target = getNum('im-target');
+  const vpp = getNum('im-vpp');
+  const quantity = getNum('im-quantity');
+  const exitPrice = getNum('im-exitPrice');
+  const actualPnl = getNum('im-actualPnl');
+  const notes = document.getElementById('im-notes').value.trim();
+
+  const stopDist = (entry !== null && stop !== null) ? Math.abs(entry - stop) : null;
+  const targetDist = (entry !== null && target !== null) ? Math.abs(target - entry) : null;
+  let dollarRisk = null, size = null, rr = null;
+  if(quantity !== null && stopDist && vpp){
+    dollarRisk = stopDist * vpp * quantity;
+    size = quantity;
+  }
+  if(stopDist && targetDist){
+    rr = targetDist / stopDist;
+  }
+  const rAchieved = (actualPnl !== null && dollarRisk) ? (actualPnl / dollarRisk) : null;
+  let outcome = null;
+  if(actualPnl !== null){
+    outcome = actualPnl > 0 ? 'win' : (actualPnl < 0 ? 'loss' : 'breakeven');
+  }
+
+  const entryObj = {
+    id: 'trade_' + Date.now(),
+    ts,
+    instrument,
+    account: null,
+    riskPct: null,
+    vpp,
+    entry, stop, target, quantity,
+    dollarRisk, size, rr,
+    rule: 'deviation',
+    reasoning: { r1: notes, r2: '', r3: '', r4: '' },
+    outcome,
+    exitPrice,
+    exitReason: null,
+    followedExitPlan: null,
+    actualPnl,
+    rAchieved,
+    postTradeNotes: null
+  };
+  logData.push(entryObj);
+  await saveLog();
+
+  if(outcome){
+    recomputeStreakFromLog();
+    await saveStreak();
+  }
+
+  // reset the impulse form
+  ['im-instrument','im-quantity','im-entry','im-stop','im-target','im-vpp','im-exitPrice','im-actualPnl','im-notes'].forEach(id=>{
+    document.getElementById(id).value = '';
+  });
+  document.getElementById('im-ts').value = toDatetimeLocal(new Date().toISOString());
+
+  renderAll();
+});
+
+const REG_KEY = 'execution-console:registration';
+
+function formatDisplayName(fullName){
+  const parts = String(fullName || '').trim().split(/\s+/).filter(Boolean);
+  if(!parts.length) return '';
+  if(parts.length === 1) return parts[0];
+  const firstName = parts[0];
+  const surnameInitial = parts[parts.length - 1].charAt(0).toUpperCase();
+  return `${firstName} ${surnameInitial}`;
+}
+
+function checkRegistration(){
+  try{
+    const raw = localStorage.getItem(REG_KEY);
+    const reg = raw ? JSON.parse(raw) : null;
+    if(reg && reg.name && reg.email){
+      document.getElementById('regOverlay').classList.remove('active');
+      document.getElementById('regWatermark').textContent = formatDisplayName(reg.name);
+    } else {
+      document.getElementById('regOverlay').classList.add('active');
+    }
+  }catch(e){
+    document.getElementById('regOverlay').classList.add('active');
+  }
+}
+
+function submitRegistration(){
+  const name = document.getElementById('regName').value.trim();
+  const email = document.getElementById('regEmail').value.trim();
+  const errorEl = document.getElementById('regError');
+
+  if(!name || !email){
+    errorEl.textContent = 'Please fill in both fields to activate your copy.';
+    errorEl.style.display = 'block';
+    return;
+  }
+  const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if(!emailPattern.test(email)){
+    errorEl.textContent = 'Please enter a valid email address.';
+    errorEl.style.display = 'block';
+    return;
+  }
+
+  errorEl.style.display = 'none';
+  try{
+    localStorage.setItem(REG_KEY, JSON.stringify({ name, email, registeredAt: new Date().toISOString() }));
+  }catch(e){
+    console.error('registration save failed', e);
+  }
+  document.getElementById('regOverlay').classList.remove('active');
+  document.getElementById('regWatermark').textContent = formatDisplayName(name);
+}
+
+document.getElementById('regSubmitBtn').addEventListener('click', submitRegistration);
+
+loadState();
+
+// V1 PWA: register the service worker when hosted over HTTPS (or localhost).
+if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./service-worker.js').catch(err => {
+      console.warn('Execution Flow service worker registration failed:', err);
+    });
+  });
+}
+</script>
+</body>
+</html>
